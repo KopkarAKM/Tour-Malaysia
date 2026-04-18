@@ -1,0 +1,758 @@
+import React, { useState, useEffect } from 'react';
+import { MapPin, Camera, ShoppingBag, Utensils, Clock, Users, CheckCircle, AlertTriangle, LogOut, ChevronRight, Info } from 'lucide-react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, collection, onSnapshot, doc, setDoc } from 'firebase/firestore';
+
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+const QUESTIONS = [
+  {
+    id: 'q1',
+    text: 'Apa tujuan utama kamu ikut trip ini?',
+    options: [
+      { text: 'Berburu spot foto estetik', tags: ['foto'] },
+      { text: 'Mencicipi makanan lokal', tags: ['kuliner'] },
+      { text: 'Belanja dan cari barang unik', tags: ['belanja_murah', 'belanja_branded'] }
+    ]
+  },
+  {
+    id: 'q2',
+    text: 'Gaya belanja seperti apa yang kamu suka?',
+    options: [
+      { text: 'Barang branded dan baju di Mall', tags: ['belanja_branded'] },
+      { text: 'Oleh-oleh murah, cokelat, dan pernak-pernik', tags: ['belanja_murah', 'oleh_oleh'] },
+      { text: 'Tidak terlalu suka belanja, mending jalan-jalan', tags: ['foto', 'santai'] }
+    ]
+  },
+  {
+    id: 'q3',
+    text: 'Di malam hari, kegiatan apa yang paling kamu tunggu?',
+    options: [
+      { text: 'Keliling cari street food dan ngemil', tags: ['kuliner'] },
+      { text: 'Jalan di area gemerlap kota untuk foto', tags: ['foto'] },
+      { text: 'Istirahat santai di hotel', tags: ['santai'] }
+    ]
+  },
+  {
+    id: 'q4',
+    text: 'Pilih spot foto favorit kamu!',
+    options: [
+      { text: 'Bangunan bersejarah & budaya', tags: ['foto_budaya'] },
+      { text: 'Gedung pencakar langit modern', tags: ['foto_modern'] },
+      { text: 'Pemandangan alam / danau', tags: ['foto_alam'] }
+    ]
+  },
+  {
+    id: 'q5',
+    text: 'Preferensi makan siang saat di tempat wisata?',
+    options: [
+      { text: 'Cari paket hemat yang penting kenyang & halal', tags: ['kuliner_hemat'] },
+      { text: 'Coba restoran terkenal meski agak mahal', tags: ['kuliner'] },
+      { text: 'Ikut rombongan saja', tags: ['santai'] }
+    ]
+  },
+  {
+    id: 'q6',
+    text: 'Target utama barang yang mau dibeli?',
+    options: [
+      { text: 'Sepatu dan Baju', tags: ['belanja_branded'] },
+      { text: 'Cokelat dan makanan ringan', tags: ['oleh_oleh'] },
+      { text: 'Magnet kulkas dan suvenir kecil', tags: ['belanja_murah'] }
+    ]
+  }
+];
+
+const ITINERARY = [
+  {
+    day: 1,
+    date: '30 April',
+    title: 'Tiba di Kuala Lumpur',
+    image: 'https://images.unsplash.com/photo-1541838634568-1afec5515259?auto=format&fit=crop&w=800&q=80',
+    activities: [
+      { 
+        time: '13:00', 
+        desc: 'Landing di KLIA. Penjemputan dengan Hiace.', 
+        tags: ['santai'],
+        thumbnail: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=200&q=80',
+        todo: ['Kumpul di titik temu kedatangan', 'Masuk ke mobil Hiace', 'Briefing singkat perjalanan']
+      },
+      { 
+        time: '14:30', 
+        desc: 'Petronas Twin Tower & KL Tower.', 
+        tags: ['foto', 'foto_modern'],
+        thumbnail: 'https://images.unsplash.com/photo-1541838634568-1afec5515259?auto=format&fit=crop&w=200&q=80',
+        todo: ['Foto dengan latar menara kembar', 'Jalan santai di KLCC Park', 'Melihat air mancur']
+      },
+      { 
+        time: '16:30', 
+        desc: 'Check-in Hotel Seeds Bukit Bintang.', 
+        tags: ['santai'],
+        thumbnail: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=200&q=80',
+        todo: ['Pembagian kamar', 'Mandi dan bersih-bersih', 'Istirahat sejenak']
+      },
+      { 
+        time: '18:00', 
+        desc: 'Bukit Bintang Walk.', 
+        tags: ['belanja_branded', 'foto_modern'],
+        thumbnail: 'https://images.unsplash.com/photo-1596422846543-74c6e25501f4?auto=format&fit=crop&w=200&q=80',
+        todo: ['Menikmati suasana gemerlap kota', 'Melihat pertunjukan pengamen jalanan', 'Foto di persimpangan jalan ikonik']
+      },
+      { 
+        time: '19:30', 
+        desc: 'Makan malam: Jalan Alor / GrabFood.', 
+        tags: ['kuliner'], 
+        info: 'Pesan GrabFood kolektif lebih hemat energi jika lelah.',
+        thumbnail: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=200&q=80',
+        todo: ['Mencicipi seafood lokal', 'Mencari durian Musang King', 'Makan malam santai bersama tim']
+      }
+    ]
+  },
+  {
+    day: 2,
+    date: '1 Mei',
+    title: 'Eksplorasi Budaya & Pasar',
+    image: 'https://images.unsplash.com/photo-1518342880790-252f483d3e8e?auto=format&fit=crop&w=800&q=80',
+    activities: [
+      { 
+        time: '08:30', 
+        desc: 'Batu Caves.', 
+        tags: ['foto', 'foto_budaya'],
+        thumbnail: 'https://images.unsplash.com/photo-1518342880790-252f483d3e8e?auto=format&fit=crop&w=200&q=80',
+        todo: ['Foto di tangga warna-warni', 'Melihat patung Dewa Murugan emas', 'Masuk melihat keindahan gua kapur']
+      },
+      { 
+        time: '11:30', 
+        desc: 'Makan Siang Area Batu Caves.', 
+        tags: ['kuliner', 'kuliner_hemat'],
+        thumbnail: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=200&q=80',
+        todo: ['Makan paket Nasi Briyani', 'Coba teh tarik asli', 'Istirahat makan siang']
+      },
+      { 
+        time: '13:30', 
+        desc: 'Chocolate Boutique.', 
+        tags: ['oleh_oleh', 'belanja_murah'],
+        thumbnail: 'https://images.unsplash.com/photo-1548907040-4baa42d10919?auto=format&fit=crop&w=200&q=80',
+        todo: ['Mencicipi sampel cokelat gratis', 'Beli cokelat tiramisu', 'Beli oleh-oleh kemasan paket']
+      },
+      { 
+        time: '15:30', 
+        desc: 'Petaling Street Market (Chinatown).', 
+        tags: ['belanja_murah', 'foto_budaya'], 
+        info: 'Pintar-pintar menawar barang di sini.',
+        thumbnail: 'https://images.unsplash.com/photo-1555940280-4566c75dfa36?auto=format&fit=crop&w=200&q=80',
+        todo: ['Menawar harga barang', 'Beli kaos dan suvenir murah', 'Foto di gerbang Chinatown']
+      },
+      { 
+        time: '19:00', 
+        desc: 'Kembali ke Hotel. Makan malam GrabFood.', 
+        tags: ['santai'],
+        thumbnail: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=200&q=80',
+        todo: ['Merekap pengeluaran hari ini', 'Makan malam santai di kamar', 'Istirahat']
+      }
+    ]
+  },
+  {
+    day: 3,
+    date: '2 Mei',
+    title: 'Perjalanan Sejarah ke Melaka',
+    image: 'https://images.unsplash.com/photo-1582218059049-36eb8b15d918?auto=format&fit=crop&w=800&q=80',
+    activities: [
+      { 
+        time: '08:00', 
+        desc: 'Perjalanan KL ke Melaka.', 
+        tags: ['santai'],
+        thumbnail: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=200&q=80',
+        todo: ['Tidur di mobil', 'Mendengarkan musik', 'Melihat pemandangan jalan tol']
+      },
+      { 
+        time: '10:30', 
+        desc: 'Bangunan Merah (Stadthuys) & Clock Tower.', 
+        tags: ['foto', 'foto_budaya'],
+        thumbnail: 'https://images.unsplash.com/photo-1582218059049-36eb8b15d918?auto=format&fit=crop&w=200&q=80',
+        todo: ['Foto di depan bangunan merah bersejarah', 'Melihat menara jam', 'Naik becak hias keliling area']
+      },
+      { 
+        time: '12:30', 
+        desc: 'Makan Siang sekitar Jonker Walk.', 
+        tags: ['kuliner', 'kuliner_hemat'],
+        thumbnail: 'https://images.unsplash.com/photo-1626804475297-41607ea0af49?auto=format&fit=crop&w=200&q=80',
+        todo: ['Mencari Asam Pedas khas Melaka', 'Mencoba cendol Melaka', 'Istirahat makan']
+      },
+      { 
+        time: '13:30', 
+        desc: 'Menelusuri Jonker Walk.', 
+        tags: ['belanja_murah', 'oleh_oleh', 'foto_budaya'],
+        thumbnail: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=200&q=80',
+        todo: ['Membeli barang antik', 'Membeli pernak-pernik unik', 'Berjalan santai menyusuri toko lama']
+      },
+      { 
+        time: '16:00', 
+        desc: 'Masjid Terapung Selat Melaka.', 
+        tags: ['foto', 'foto_alam'],
+        thumbnail: 'https://images.unsplash.com/photo-1572074360982-f326c26804d9?auto=format&fit=crop&w=200&q=80',
+        todo: ['Melihat pemandangan laut lepas', 'Foto siluet masjid saat sore', 'Salat ashar/magrib bagi muslim']
+      },
+      { 
+        time: '18:00', 
+        desc: 'Perjalanan kembali ke KL.', 
+        tags: ['santai'],
+        thumbnail: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=200&q=80',
+        todo: ['Pesan GrabFood dari mobil', 'Istirahat di perjalanan pulang']
+      }
+    ]
+  },
+  {
+    day: 4,
+    date: '3 Mei',
+    title: 'Putrajaya & Shopping Spree',
+    image: 'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=800&q=80',
+    activities: [
+      { 
+        time: '09:00', 
+        desc: 'Dataran Merdeka Square.', 
+        tags: ['foto', 'foto_budaya'],
+        thumbnail: 'https://images.unsplash.com/photo-1601058269781-80cb33dc783e?auto=format&fit=crop&w=200&q=80',
+        todo: ['Foto di bangunan Sultan Abdul Samad', 'Melihat tiang bendera tertinggi', 'Berjalan di lapangan rumput luas']
+      },
+      { 
+        time: '11:00', 
+        desc: 'Dataran Putrajaya (Masjid Putra & Danau).', 
+        tags: ['foto', 'foto_alam', 'foto_modern'],
+        thumbnail: 'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=200&q=80',
+        todo: ['Foto dengan latar Masjid Pink', 'Duduk santai menikmati angin danau', 'Melihat kantor Perdana Menteri']
+      },
+      { 
+        time: '13:00', 
+        desc: 'Makan Siang Food Court Ayer@8.', 
+        tags: ['kuliner_hemat', 'kuliner'],
+        thumbnail: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=200&q=80',
+        todo: ['Makan hemat menghadap danau', 'Pilih menu makanan lokal beragam', 'Istirahat siang']
+      },
+      { 
+        time: '15:30', 
+        desc: 'Pavilion Mall / Suria KLCC.', 
+        tags: ['belanja_branded', 'foto_modern'], 
+        info: 'Spot utama untuk mencari baju dan sepatu bermerek.',
+        thumbnail: 'https://images.unsplash.com/photo-1582650535185-5a7c2957b458?auto=format&fit=crop&w=200&q=80',
+        todo: ['Belanja sepatu dan baju bermerek', 'Masuk ke butik ternama', 'Nongkrong di kafe dalam mall']
+      },
+      { 
+        time: '19:30', 
+        desc: 'Packing dan makan malam GrabFood.', 
+        tags: ['santai'],
+        thumbnail: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=200&q=80',
+        todo: ['Menyusun koper untuk pulang', 'Makan malam terakhir di KL', 'Tidur lebih awal']
+      }
+    ]
+  },
+  {
+    day: 5,
+    date: '4 Mei',
+    title: 'Kepulangan ke Indonesia',
+    image: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=800&q=80',
+    activities: [
+      { 
+        time: '02:00', 
+        desc: 'Bangun dan Check Out Hotel.', 
+        tags: ['santai'],
+        thumbnail: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=200&q=80',
+        todo: ['Cek ulang barang bawaan', 'Serahkan kunci kamar', 'Kumpul di lobi hotel']
+      },
+      { 
+        time: '03:00', 
+        desc: 'BERANGKAT DARI HOTEL menuju KLIA2.', 
+        tags: ['santai'], 
+        info: 'Wajib berangkat jam 03:00 pagi.',
+        thumbnail: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=200&q=80',
+        todo: ['Masuk Hiace', 'Perjalanan lancar pagi hari']
+      },
+      { 
+        time: '04:15', 
+        desc: 'Tiba di Bandara KLIA2.', 
+        tags: ['santai'], 
+        info: 'Proses Drop Baggage & Imigrasi.',
+        thumbnail: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=200&q=80',
+        todo: ['Cetak tiket mandiri', 'Antre masuk bagasi', 'Pemeriksaan imigrasi']
+      },
+      { 
+        time: '07:15', 
+        desc: 'Penerbangan kembali ke Indonesia.', 
+        tags: ['santai'],
+        thumbnail: 'https://images.unsplash.com/photo-1517400508447-f8dd518b86db?auto=format&fit=crop&w=200&q=80',
+        todo: ['Naik ke pesawat', 'Tidur di pesawat', 'Sampai dengan selamat']
+      }
+    ]
+  }
+];
+
+export default function App() {
+  const [participants, setParticipants] = useState([]);
+  const [authUser, setAuthUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [currentAnswers, setCurrentAnswers] = useState({});
+  const [surveyStep, setSurveyStep] = useState(0); 
+  const [tempProfile, setTempProfile] = useState({ name: '', diet: '', needs: '' });
+  const [loginName, setLoginName] = useState('');
+
+  // 1. Inisialisasi Firebase Auth
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (error) {
+        console.error("Auth Error:", error);
+      }
+    };
+    initAuth();
+    const unsubscribe = onAuthStateChanged(auth, setAuthUser);
+    return () => unsubscribe();
+  }, []);
+
+  // 2. Tarik Data Realtime dari Firestore
+  useEffect(() => {
+    if (!authUser) return;
+    const participantsRef = collection(db, 'artifacts', appId, 'public', 'data', 'participants');
+    const unsubscribe = onSnapshot(participantsRef, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setParticipants(data);
+      
+      // Sinkronkan data currentUser jika ada perubahan di database
+      if (currentUser && currentUser.role !== 'admin') {
+        const updatedUser = data.find(u => u.id === currentUser.id);
+        if (updatedUser) setCurrentUser(updatedUser);
+      }
+    }, (error) => {
+      console.error("Snapshot error:", error);
+    });
+    return () => unsubscribe();
+  }, [authUser, currentUser?.id]);
+
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
+    const trimmedName = loginName.trim();
+    if (!trimmedName) return;
+
+    // Cari peserta di data yang sudah ditarik
+    let user = participants.find(u => u.name.toLowerCase() === trimmedName.toLowerCase() || u.realName?.toLowerCase() === trimmedName.toLowerCase());
+    
+    if (!user) {
+      // Jika belum ada, buat ID baru dan simpan ke database
+      const newId = 'u_' + Date.now();
+      user = { 
+        id: newId, 
+        name: trimmedName, 
+        realName: trimmedName, 
+        role: 'user', 
+        hasCompletedSurvey: false, 
+        interests: [], 
+        diet: '', 
+        needs: '' 
+      };
+      
+      if (authUser) {
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', newId);
+        await setDoc(docRef, user);
+      }
+    }
+
+    setCurrentUser(user);
+    setSurveyStep(0);
+    setCurrentAnswers({});
+    setTempProfile({ name: user.realName || '', diet: user.diet || '', needs: user.needs || '' });
+  };
+
+  const handleAdminLogin = () => {
+    const pass = prompt("Masukkan password admin (ketik: admin123):");
+    if (pass === "admin123") {
+      setCurrentUser({ id: 'admin', name: 'Alhamdi', role: 'admin' });
+      setSurveyStep(0);
+    } else if (pass !== null) {
+      alert("Password salah.");
+    }
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setLoginName('');
+  };
+
+  const handleProfileSubmit = async (e) => {
+    e.preventDefault();
+    if (!tempProfile.name.trim()) return;
+    
+    const updatedUser = { 
+      ...currentUser, 
+      realName: tempProfile.name, 
+      diet: tempProfile.diet || 'Tidak ada', 
+      needs: tempProfile.needs || 'Tidak ada' 
+    };
+    
+    setCurrentUser(updatedUser);
+    setSurveyStep(1); 
+
+    // Simpan ke database
+    if (authUser) {
+      const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', currentUser.id);
+      await setDoc(docRef, updatedUser, { merge: true });
+    }
+  };
+
+  const handleAnswer = (questionId, tags) => {
+    setCurrentAnswers(prev => ({ ...prev, [questionId]: tags }));
+    if (surveyStep < QUESTIONS.length) {
+      setSurveyStep(prev => prev + 1);
+    } else {
+      finishSurvey(tags, questionId);
+    }
+  };
+
+  const finishSurvey = async (lastTags, lastQuestionId) => {
+    const allAnswers = { ...currentAnswers, [lastQuestionId]: lastTags };
+    let calculatedTags = [];
+    
+    Object.values(allAnswers).forEach(tags => {
+      calculatedTags = [...calculatedTags, ...tags];
+    });
+
+    const uniqueTags = [...new Set(calculatedTags)];
+
+    const finalUserData = { 
+      ...currentUser, 
+      hasCompletedSurvey: true, 
+      interests: uniqueTags 
+    };
+
+    setCurrentUser(finalUserData);
+
+    // Simpan hasil akhir ke database
+    if (authUser) {
+      const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', currentUser.id);
+      await setDoc(docRef, finalUserData, { merge: true });
+    }
+  };
+
+  const isRecommended = (activityTags, userInterests) => {
+    if (!userInterests || userInterests.length === 0) return false;
+    if (userInterests.includes('semua')) return true;
+    return activityTags.some(tag => userInterests.includes(tag));
+  };
+
+
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md text-center">
+          <div className="bg-blue-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <MapPin className="text-white w-8 h-8" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">Trip Planner Malaysia</h1>
+          <p className="text-gray-500 mb-8">Masukkan nama Kamu untuk masuk</p>
+          
+          <form onSubmit={handleLoginSubmit} className="space-y-4">
+            <div>
+              <input
+                type="text"
+                value={loginName}
+                onChange={(e) => setLoginName(e.target.value)}
+                className="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center font-medium"
+                placeholder="Ketik nama Kamu..."
+                required
+              />
+            </div>
+            <button type="submit" className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition">
+              Masuk
+            </button>
+          </form>
+
+          <button onClick={handleAdminLogin} className="mt-8 text-sm text-gray-400 hover:text-gray-600 transition">
+            Masuk sebagai Admin
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (currentUser.role === 'user' && !currentUser.hasCompletedSurvey) {
+    if (surveyStep === 0) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex flex-col p-4">
+          <header className="flex justify-between items-center mb-8">
+            <h1 className="text-xl font-bold text-gray-800">Data Diri & Kebutuhan</h1>
+            <button onClick={handleLogout} className="text-gray-500 hover:text-red-500">
+              <LogOut className="w-6 h-6" />
+            </button>
+          </header>
+
+          <form onSubmit={handleProfileSubmit} className="flex-1 flex flex-col max-w-md mx-auto w-full">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Nama Panggilan / Asli</label>
+                <input 
+                  type="text" 
+                  required
+                  value={tempProfile.name}
+                  onChange={e => setTempProfile({...tempProfile, name: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Masukkan nama Kamu"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Pantangan Makanan / Alergi</label>
+                <input 
+                  type="text" 
+                  value={tempProfile.diet}
+                  onChange={e => setTempProfile({...tempProfile, diet: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Contoh: Alergi udang, tidak makan pedas (Kosongkan jika tidak ada)"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Kebutuhan Khusus</label>
+                <textarea 
+                  value={tempProfile.needs}
+                  onChange={e => setTempProfile({...tempProfile, needs: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[100px]"
+                  placeholder="Contoh: Mudah mabuk perjalanan, butuh waktu istirahat lebih (Kosongkan jika tidak ada)"
+                ></textarea>
+              </div>
+
+              <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition">
+                Lanjut ke Kuesioner
+              </button>
+            </div>
+          </form>
+        </div>
+      );
+    }
+
+    const questionIndex = surveyStep - 1;
+    const question = QUESTIONS[questionIndex];
+
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col p-4">
+        <header className="flex justify-between items-center mb-8">
+          <h1 className="text-xl font-bold text-gray-800">Kuesioner Minat</h1>
+          <button onClick={handleLogout} className="text-gray-500 hover:text-red-500">
+            <LogOut className="w-6 h-6" />
+          </button>
+        </header>
+
+        <div className="flex-1 flex flex-col justify-center max-w-md mx-auto w-full">
+          <div className="mb-8">
+            <p className="text-sm text-blue-600 font-semibold mb-2">Pertanyaan {questionIndex + 1} dari {QUESTIONS.length}</p>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                style={{ width: `${((questionIndex + 1) / QUESTIONS.length) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">{question.text}</h2>
+
+          <div className="space-y-4">
+            {question.options.map((option, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleAnswer(question.id, option.tags)}
+                className="w-full p-5 bg-white border border-gray-200 rounded-xl text-left hover:border-blue-500 hover:shadow-md transition-all font-medium text-gray-700"
+              >
+                {option.text}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Activity Card Component for Reuse
+  const ActivityCard = ({ act, match }) => (
+    <div className={`flex flex-col p-4 mb-4 rounded-xl border transition-colors ${match ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-100 shadow-sm'}`}>
+      <div className="flex justify-between items-start mb-3">
+        <span className={`text-sm font-bold ${match ? 'text-blue-700' : 'text-gray-500'}`}>{act.time}</span>
+        {match && (
+          <span className="inline-block px-2 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded">
+            Rekomendasi Untuk Kamu
+          </span>
+        )}
+      </div>
+      
+      <div className="flex gap-4">
+        {act.thumbnail && (
+          <img src={act.thumbnail} alt={act.desc} className="w-20 h-20 rounded-lg object-cover flex-shrink-0 border border-gray-200" />
+        )}
+        <div>
+          <p className={`text-sm ${match ? 'font-bold text-gray-900' : 'font-medium text-gray-800'}`}>{act.desc}</p>
+          
+          {act.todo && act.todo.length > 0 && (
+            <ul className="mt-2 list-disc pl-4 text-xs text-gray-600 space-y-1">
+              {act.todo.map((item, idx) => (
+                <li key={idx}>{item}</li>
+              ))}
+            </ul>
+          )}
+
+          {act.info && (
+            <div className="flex mt-3 bg-blue-50/50 p-2 rounded text-xs text-blue-800 items-start border border-blue-100">
+              <Info className="w-4 h-4 mr-1 flex-shrink-0 mt-0.5" />
+              <p>{act.info}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  if (currentUser.role === 'admin') {
+    return (
+      <div className="min-h-screen bg-gray-100 pb-20">
+        <div className="bg-blue-700 text-white p-6 shadow-md rounded-b-3xl">
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-2xl font-bold">Dasbor Admin</h1>
+            <button onClick={handleLogout} className="bg-blue-800 p-2 rounded-full hover:bg-blue-900 transition">
+              <LogOut className="w-5 h-5" />
+            </button>
+          </div>
+          <p className="opacity-90">Pemantauan data peserta, minat, dan logistik perjalanan terpusat.</p>
+        </div>
+
+        <div className="max-w-6xl mx-auto px-4 mt-6">
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg shadow-sm mb-6">
+            <h3 className="font-bold text-yellow-800 flex items-center mb-2">
+              <AlertTriangle className="w-5 h-5 mr-2" /> Pengingat Eksekusi
+            </h3>
+            <ul className="list-disc list-inside text-sm text-yellow-800 space-y-1">
+              <li>Kepulangan (07:15): Wajib berangkat dari hotel pukul 03:00 pagi.</li>
+              <li>Makan Malam: Kumpulkan pesanan GrabFood saat rombongan berada di kendaraan menuju hotel.</li>
+            </ul>
+          </div>
+
+          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <Users className="w-6 h-6 mr-2 text-blue-600" /> Data Profil & Kebutuhan Peserta
+          </h2>
+          <div className="bg-white rounded-xl shadow-sm mb-8 overflow-hidden border border-gray-200">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="p-4 font-semibold text-gray-600">Nama</th>
+                    <th className="p-4 font-semibold text-gray-600">Status</th>
+                    <th className="p-4 font-semibold text-gray-600">Pantangan Makanan</th>
+                    <th className="p-4 font-semibold text-gray-600">Kebutuhan Khusus</th>
+                    <th className="p-4 font-semibold text-gray-600">Fokus Minat</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {participants.filter(u => u.role !== 'admin').map(user => (
+                    <tr key={user.id} className="hover:bg-gray-50">
+                      <td className="p-4 font-medium text-gray-800">{user.realName || user.name}</td>
+                      <td className="p-4">
+                        {user.hasCompletedSurvey 
+                          ? <span className="inline-flex items-center text-green-700 bg-green-100 px-2 py-1 rounded-md text-xs font-medium"><CheckCircle className="w-3 h-3 mr-1"/> Selesai</span>
+                          : <span className="text-gray-500 bg-gray-100 px-2 py-1 rounded-md text-xs">Belum</span>
+                        }
+                      </td>
+                      <td className="p-4 text-gray-600 max-w-[200px] truncate" title={user.diet || '-'}>{user.diet || '-'}</td>
+                      <td className="p-4 text-gray-600 max-w-[200px] truncate" title={user.needs || '-'}>{user.needs || '-'}</td>
+                      <td className="p-4">
+                        <div className="flex flex-wrap gap-1">
+                          {user.interests.slice(0, 2).map((tag, i) => (
+                            <span key={i} className="bg-blue-50 text-blue-700 text-[10px] px-2 py-1 rounded font-medium border border-blue-100">
+                              {tag.replace('_', ' ')}
+                            </span>
+                          ))}
+                          {user.interests.length > 2 && <span className="text-[10px] text-gray-500">+{user.interests.length - 2}</span>}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <MapPin className="w-6 h-6 mr-2 text-blue-600" /> Itinerary Utama
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {ITINERARY.map((day, idx) => (
+              <div key={idx} className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+                <div className="h-32 bg-gray-200 relative">
+                  <img src={day.image} alt={day.title} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-end p-4">
+                    <div>
+                      <p className="text-white font-bold text-lg">{day.date}</p>
+                      <p className="text-gray-200 text-sm">{day.title}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4 bg-gray-50">
+                  {day.activities.map((act, i) => (
+                    <ActivityCard key={i} act={act} match={false} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 pb-20">
+      <div className="bg-white p-6 shadow-sm rounded-b-3xl mb-6">
+        <div className="flex justify-between items-center mb-2">
+          <h1 className="text-2xl font-bold text-gray-800">Halo, {currentUser.realName || currentUser.name}!</h1>
+          <button onClick={handleLogout} className="text-gray-400 hover:text-red-500 transition">
+            <LogOut className="w-5 h-5" />
+          </button>
+        </div>
+        <p className="text-gray-500 text-sm">Ini jadwal perjalanan yang disesuaikan dengan minat Kamu.</p>
+        
+        <div className="flex flex-wrap gap-2 mt-4">
+          {currentUser.interests.map((tag, i) => (
+            <span key={i} className="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-bold flex items-center capitalize">
+              {tag.replace('_', ' ')}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="max-w-md mx-auto px-4 space-y-6">
+        {ITINERARY.map((day, idx) => (
+          <div key={idx} className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+            <div className="h-40 relative">
+              <img src={day.image} alt={day.title} className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-4">
+                <div>
+                  <p className="text-blue-300 font-bold text-sm tracking-wider uppercase">Hari {day.day} • {day.date}</p>
+                  <p className="text-white font-bold text-xl">{day.title}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 bg-gray-50">
+              {day.activities.map((act, i) => {
+                const match = isRecommended(act.tags, currentUser.interests);
+                return <ActivityCard key={i} act={act} match={match} />;
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
