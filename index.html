@@ -35,15 +35,13 @@
     import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
     import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 
-    // MASUKKAN KONFIGURASI FIREBASE KAMU DI BAWAH INI UNTUK MENYIMPAN DATA MULTI-USER
-    // Buat project di console.firebase.google.com, pilih Web App, dan salin config-nya ke sini.
     const myFirebaseConfig = {
-      // apiKey: "API_KEY_KAMU",
-      // authDomain: "DOMAIN_KAMU.firebaseapp.com",
-      // projectId: "ID_PROYEK_KAMU",
-      // storageBucket: "BUCKET_KAMU.appspot.com",
-      // messagingSenderId: "SENDER_ID",
-      // appId: "APP_ID"
+      apiKey: "AIzaSyBA3TJB_gc87BfMR7dgQKYqYjR8nbLUgrg",
+      authDomain: "trip-malaysia.firebaseapp.com",
+      projectId: "trip-malaysia",
+      storageBucket: "trip-malaysia.firebasestorage.app",
+      messagingSenderId: "66731123625",
+      appId: "1:66731123625:web:e954af1c31fbd32bba5ab8"
     };
 
     const isFirebaseActive = Object.keys(myFirebaseConfig).length > 0;
@@ -117,7 +115,7 @@
         day: 1,
         date: '30 April',
         title: 'Sinkronisasi Logistik & Estetika',
-        image: 'https://images.unsplash.com/photo-1541838634568-1afec5515259?auto=format&fit=crop&w=800&q=80',
+        image: 'https://image.pollinations.ai/prompt/Kuala%20Lumpur%20skyline%20sunset?width=800&height=600&nologo=true',
         activities: [
           { 
             id: 'd1_a1',
@@ -125,7 +123,7 @@
             desc: 'Landing di KLIA. Penjemputan dengan Hiace.', 
             tags: ['santai'],
             location: 'Kuala Lumpur International Airport',
-            thumbnail: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=800&q=80',
+            thumbnail: 'https://image.pollinations.ai/prompt/Kuala%20Lumpur%20International%20Airport%20architecture?width=800&height=600&nologo=true',
             insight: 'Persiapkan dokumen MDAC yang sudah diisi online. Kita gunakan Hiace pribadi agar tidak repot menyeret koper.',
             todo: ['Lolos imigrasi autogate', 'Kumpul di titik temu', 'Masuk Hiace menuju hotel']
           },
@@ -135,7 +133,7 @@
             desc: 'Petronas Twin Tower & KL Tower.', 
             tags: ['foto', 'foto_modern'],
             location: 'Petronas Twin Towers',
-            thumbnail: 'https://images.unsplash.com/photo-1541838634568-1afec5515259?auto=format&fit=crop&w=800&q=80',
+            thumbnail: 'https://image.pollinations.ai/prompt/Petronas%20Twin%20Towers%20Kuala%20Lumpur%20sunny%20day?width=800&height=600&nologo=true',
             insight: 'Ambil foto dari Taman KLCC dekat kolam Lake Symphony atau dari Jembatan Saloma Link untuk estetika maksimal.',
             todo: ['Foto berlatar air mancur Lake Symphony', 'Foto low-angle di Jembatan Saloma Link', 'Foto urban di persimpangan Yap Kwan Seng']
           },
@@ -145,7 +143,7 @@
             desc: 'Check-in Seeds Hotel Bukit Bintang.', 
             tags: ['santai'],
             location: 'Seeds Hotel Bukit Bintang',
-            thumbnail: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80',
+            thumbnail: 'https://image.pollinations.ai/prompt/Cozy%20modern%20hotel%20room%20interior?width=800&height=600&nologo=true',
             insight: 'Lokasi hotel sangat dekat pusat komersial dan Jalan Alor untuk efisiensi mobilitas.',
             todo: ['Terima kunci kamar', 'Mandi dan bersih-bersih', 'Isi ulang daya ponsel']
           },
@@ -155,7 +153,7 @@
             desc: 'Bukit Bintang Walkway.', 
             tags: ['belanja_branded', 'foto_modern'],
             location: 'Pavilion Kuala Lumpur',
-            thumbnail: 'https://images.unsplash.com/photo-1596422846543-74c6e25501f4?auto=format&fit=crop&w=800&q=80',
+            thumbnail: 'https://image.pollinations.ai/prompt/Bukit%20Bintang%20Kuala%20Lumpur%20night%20neon%20lights%20street?width=800&height=600&nologo=true',
             insight: 'Nikmati suasana musisi jalanan yang berbaur dengan butik internasional di bawah lampu neon.',
             todo: ['Jalan santai di trotoar Bukit Bintang', 'Lihat pertunjukan pengamen', 'Foto persimpangan ikonik']
           },
@@ -166,7 +164,7 @@
             tags: ['kuliner'], 
             info: 'Makan di kamar lebih hemat energi.',
             location: 'Jalan Alor',
-            thumbnail: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80',
+            thumbnail: 'https://image.pollinations.ai/prompt/Delicious%20Malaysian%20street%20food%20Nasi%20Lemak?width=800&height=600&nologo=true',
             insight: 'Pesan GrabFood ke hotel menghemat energi fisik dan mencegah harga mahal di restoran jalanan.',
             todo: ['Pilih menu halal di aplikasi', 'Makan malam bersama di kamar', 'Istirahat']
           }
@@ -176,7 +174,7 @@
         day: 2,
         date: '1 Mei',
         title: 'Spiritual & Warisan Visual',
-        image: 'https://images.unsplash.com/photo-1518342880790-252f483d3e8e?auto=format&fit=crop&w=800&q=80',
+        image: 'https://image.pollinations.ai/prompt/Batu%20Caves%20stairs%20wide%20shot?width=800&height=600&nologo=true',
         activities: [
           { 
             id: 'd2_a1',
@@ -184,7 +182,7 @@
             desc: 'Eksplorasi Batu Caves.', 
             tags: ['foto', 'foto_budaya'],
             location: 'Batu Caves',
-            thumbnail: 'https://images.unsplash.com/photo-1518342880790-252f483d3e8e?auto=format&fit=crop&w=800&q=80',
+            thumbnail: 'https://image.pollinations.ai/prompt/Batu%20Caves%20Malaysia%20golden%20statue%20and%20colorful%20stairs?width=800&height=600&nologo=true',
             insight: 'Datang pagi untuk hindari panas dan massa turis padat.',
             todo: ['Foto dengan patung emas Dewa Murugan', 'Daki 272 anak tangga pelangi', 'Waspada kera liar']
           },
@@ -194,8 +192,8 @@
             desc: 'Makan Siang Halal Area Batu Caves.', 
             tags: ['kuliner', 'kuliner_hemat'],
             location: 'Batu Caves',
-            thumbnail: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80',
-            insight: 'Pilih paket nasi Mamak dengan harga wajar RM 10 hingga RM 15.',
+            thumbnail: 'https://image.pollinations.ai/prompt/Nasi%20Briyani%20delicious%20food?width=800&height=600&nologo=true',
+            insight: 'Pilih paket nasi Mamak dengan harga wajar RM 10 - RM 15.',
             todo: ['Makan paket nasi briyani', 'Pulihkan energi fisik']
           },
           { 
@@ -204,7 +202,7 @@
             desc: 'Kunjungan Chocolate Boutique.', 
             tags: ['oleh_oleh', 'belanja_murah'],
             location: 'Beryl\'s Chocolate Kingdom',
-            thumbnail: 'https://images.unsplash.com/photo-1548907040-4baa42d10919?auto=format&fit=crop&w=800&q=80',
+            thumbnail: 'https://image.pollinations.ai/prompt/Luxury%20chocolate%20boutique%20display?width=800&height=600&nologo=true',
             insight: 'Sentra inovasi cokelat lokal Malaysia.',
             todo: ['Cicipi sampel cokelat', 'Beli cokelat tiramisu']
           },
@@ -215,7 +213,7 @@
             tags: ['belanja_murah', 'foto_budaya'], 
             info: 'Siapkan kamera untuk dinding mural.',
             location: 'Kwai Chai Hong',
-            thumbnail: 'https://images.unsplash.com/photo-1555940280-4566c75dfa36?auto=format&fit=crop&w=800&q=80',
+            thumbnail: 'https://image.pollinations.ai/prompt/Kwai%20Chai%20Hong%20Kuala%20Lumpur%20lanterns%20street?width=800&height=600&nologo=true',
             insight: 'Kwai Chai Hong adalah gang mural hiper-realis awal abad 20. Tangkap cahaya lampion saat senja.',
             todo: ['Berfoto di mural interaktif', 'Tangkap momen lampion senja', 'Belanja suvenir']
           },
@@ -225,7 +223,7 @@
             desc: 'Kembali ke Hotel & GrabFood.', 
             tags: ['santai'],
             location: 'Seeds Hotel Bukit Bintang',
-            thumbnail: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=800&q=80',
+            thumbnail: 'https://image.pollinations.ai/prompt/Kuala%20Lumpur%20cityscape%20night%20view?width=800&height=600&nologo=true',
             insight: 'Pesan makanan lewat aplikasi untuk memaksimalkan istirahat.',
             todo: ['Makan malam', 'Cek stok memori HP kamera']
           }
@@ -235,7 +233,7 @@
         day: 3,
         date: '2 Mei',
         title: 'Bandaraya Bersejarah Melaka',
-        image: 'https://images.unsplash.com/photo-1582218059049-36eb8b15d918?auto=format&fit=crop&w=800&q=80',
+        image: 'https://image.pollinations.ai/prompt/Melaka%20river%20historic%20city?width=800&height=600&nologo=true',
         activities: [
           { 
             id: 'd3_a1',
@@ -243,7 +241,7 @@
             desc: 'Logistik Trans-Urban KL-Melaka.', 
             tags: ['santai'],
             location: 'Melaka',
-            thumbnail: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=800&q=80',
+            thumbnail: 'https://image.pollinations.ai/prompt/Modern%20tourist%20van%20driving%20on%20highway?width=800&height=600&nologo=true',
             insight: 'Tidur nyenyak selama perjalanan tol 2 jam menggunakan Hiace.',
             todo: ['Istirahat di mobil']
           },
@@ -253,7 +251,7 @@
             desc: 'Bangunan Merah Stadthuys.', 
             tags: ['foto', 'foto_budaya'],
             location: 'Stadthuys Melaka',
-            thumbnail: 'https://images.unsplash.com/photo-1582218059049-36eb8b15d918?auto=format&fit=crop&w=800&q=80',
+            thumbnail: 'https://image.pollinations.ai/prompt/Stadthuys%20Melaka%20red%20building%20historic?width=800&height=600&nologo=true',
             insight: 'Dinding bata merah terakota menyajikan kontras brilian dengan langit biru.',
             todo: ['Foto gedung Stadthuys', 'Naik becak hias Melaka']
           },
@@ -263,7 +261,7 @@
             desc: 'Makan Siang Halal Melaka.', 
             tags: ['kuliner', 'kuliner_hemat'],
             location: 'Jonker Street',
-            thumbnail: 'https://images.unsplash.com/photo-1626804475297-41607ea0af49?auto=format&fit=crop&w=800&q=80',
+            thumbnail: 'https://image.pollinations.ai/prompt/Asam%20Pedas%20Melaka%20delicious%20food?width=800&height=600&nologo=true',
             insight: 'Makan di Kocik Kitchen Nyonya Halal atau Asam Pedas Claypot.',
             todo: ['Coba Chicken Pongteh', 'Makan Asam Pedas Melaka']
           },
@@ -273,7 +271,7 @@
             desc: 'Menelusuri Jonker Walk.', 
             tags: ['belanja_murah', 'oleh_oleh', 'foto_budaya'],
             location: 'Jonker Walk Melaka',
-            thumbnail: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=800&q=80',
+            thumbnail: 'https://image.pollinations.ai/prompt/Jonker%20Walk%20Melaka%20street%20market?width=800&height=600&nologo=true',
             insight: 'Pusat budaya Peranakan. Ideal untuk barang antik dan suvenir.',
             todo: ['Susuri toko lama', 'Beli pernak-pernik']
           },
@@ -283,7 +281,7 @@
             desc: 'Masjid Selat Melaka.', 
             tags: ['foto', 'foto_alam'],
             location: 'Melaka Straits Mosque',
-            thumbnail: 'https://images.unsplash.com/photo-1572074360982-f326c26804d9?auto=format&fit=crop&w=800&q=80',
+            thumbnail: 'https://image.pollinations.ai/prompt/Malacca%20Straits%20Mosque%20sunset%20floating?width=800&height=600&nologo=true',
             insight: 'Tiba saat air pasang menciptakan efek masjid melayang. Sempurna untuk golden hour.',
             todo: ['Foto siluet masjid', 'Salat di area masjid']
           },
@@ -293,7 +291,7 @@
             desc: 'Perjalanan kembali ke KL.', 
             tags: ['santai'],
             location: 'Kuala Lumpur',
-            thumbnail: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=800&q=80',
+            thumbnail: 'https://image.pollinations.ai/prompt/Highway%20night%20drive%20long%20exposure?width=800&height=600&nologo=true',
             insight: 'Kumpulkan pesanan GrabFood di mobil agar makanan siap di hotel.',
             todo: ['Pesan GrabFood', 'Tidur di perjalanan']
           }
@@ -303,7 +301,7 @@
         day: 4,
         date: '3 Mei',
         title: 'Geometri & Belanja Viral',
-        image: 'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=800&q=80',
+        image: 'https://image.pollinations.ai/prompt/Putrajaya%20bridge%20and%20mosque?width=800&height=600&nologo=true',
         activities: [
           { 
             id: 'd4_a1',
@@ -311,7 +309,7 @@
             desc: 'Dataran Merdeka Square.', 
             tags: ['foto', 'foto_budaya'],
             location: 'Dataran Merdeka',
-            thumbnail: 'https://images.unsplash.com/photo-1601058269781-80cb33dc783e?auto=format&fit=crop&w=800&q=80',
+            thumbnail: 'https://image.pollinations.ai/prompt/Dataran%20Merdeka%20Kuala%20Lumpur%20historic%20building?width=800&height=600&nologo=true',
             insight: 'Alun-alun berumput dengan arsitektur hibrida Moorish Mughal.',
             todo: ['Foto di Gedung Sultan Abdul Samad', 'Lihat tiang bendera tertinggi']
           },
@@ -321,7 +319,7 @@
             desc: 'Eksplorasi Putrajaya.', 
             tags: ['foto', 'foto_alam', 'foto_modern'],
             location: 'Putra Mosque',
-            thumbnail: 'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=800&q=80',
+            thumbnail: 'https://image.pollinations.ai/prompt/Putra%20Mosque%20Putrajaya%20pink%20dome%20lake?width=800&height=600&nologo=true',
             insight: 'Fokus bidikan di Astaka Morocco estetika Marrakech dan Masjid Putra.',
             todo: ['Foto di Astaka Morocco', 'Foto estetis Masjid Putra']
           },
@@ -331,7 +329,7 @@
             desc: 'Makan Siang Tepi Danau Putrajaya.', 
             tags: ['kuliner_hemat', 'kuliner'],
             location: 'Ayer@8 Putrajaya',
-            thumbnail: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80',
+            thumbnail: 'https://image.pollinations.ai/prompt/Nasi%20Arab%20Mandi%20delicious%20food?width=800&height=600&nologo=true',
             insight: 'Makan komunal porsi besar dengan pemandangan danau.',
             todo: ['Makan Nasi Arab', 'Nikmati lanskap danau']
           },
@@ -342,7 +340,7 @@
             tags: ['belanja_branded', 'foto_modern'], 
             info: 'Incar kedai kopi viral.',
             location: 'Pavilion Kuala Lumpur',
-            thumbnail: 'https://images.unsplash.com/photo-1582650535185-5a7c2957b458?auto=format&fit=crop&w=800&q=80',
+            thumbnail: 'https://image.pollinations.ai/prompt/Suria%20KLCC%20luxury%20shopping%20mall%20interior?width=800&height=600&nologo=true',
             insight: 'Pusat ritel viral. Kunjungi Bacha Coffee dan 13DE Marzo Cafe.',
             todo: ['Beli kopi Bacha', 'Beli minuman beruang 13DE Marzo', 'Belanja barang mall']
           },
@@ -352,7 +350,7 @@
             desc: 'Persiapan Pulang & GrabFood.', 
             tags: ['santai'],
             location: 'Seeds Hotel Bukit Bintang',
-            thumbnail: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80',
+            thumbnail: 'https://image.pollinations.ai/prompt/Packing%20luggage%20in%20hotel%20room?width=800&height=600&nologo=true',
             insight: 'Susun koper malam ini. Wajib tidur awal untuk ekstraksi subuh.',
             todo: ['Packing rapi', 'Makan malam terakhir']
           }
@@ -362,7 +360,7 @@
         day: 5,
         date: '4 Mei',
         title: 'Ekstraksi Subuh ke Bandara',
-        image: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=800&q=80',
+        image: 'https://image.pollinations.ai/prompt/Airplane%20wing%20view%20sunrise?width=800&height=600&nologo=true',
         activities: [
           { 
             id: 'd5_a1',
@@ -370,7 +368,7 @@
             desc: 'Bangun dan Check Out Total.', 
             tags: ['santai'],
             location: 'Seeds Hotel Bukit Bintang',
-            thumbnail: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80',
+            thumbnail: 'https://image.pollinations.ai/prompt/Hotel%20lobby%20reception%20modern?width=800&height=600&nologo=true',
             insight: 'Transportasi publik belum buka. Hiace kita siaga penuh.',
             todo: ['Cek dokumen', 'Kumpul lobi']
           },
@@ -381,7 +379,7 @@
             tags: ['santai'], 
             info: 'Wajib berangkat tepat 03:00.',
             location: 'KLIA2',
-            thumbnail: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=800&q=80',
+            thumbnail: 'https://image.pollinations.ai/prompt/Driving%20to%20airport%20early%20morning?width=800&height=600&nologo=true',
             insight: 'Jalan bebas hambatan lancar. Estimasi 45 menit perjalanan.',
             todo: ['Tidur di Hiace']
           },
@@ -391,7 +389,7 @@
             desc: 'Proses KLIA2.', 
             tags: ['santai'], 
             location: 'KLIA2',
-            thumbnail: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=800&q=80',
+            thumbnail: 'https://image.pollinations.ai/prompt/Airport%20terminal%20departure%20hall?width=800&height=600&nologo=true',
             insight: 'Antrean drop bagasi AirAsia padat. Gerbang masuk jauh, manfaatkan waktu.',
             todo: ['Drop bagasi', 'Lewati imigrasi']
           },
@@ -401,7 +399,7 @@
             desc: 'Penerbangan Kembali.', 
             tags: ['santai'],
             location: 'Kuala Lumpur International Airport',
-            thumbnail: 'https://images.unsplash.com/photo-1517400508447-f8dd518b86db?auto=format&fit=crop&w=800&q=80',
+            thumbnail: 'https://image.pollinations.ai/prompt/Airplane%20flying%20in%20the%20sky%20sunrise?width=800&height=600&nologo=true',
             insight: 'Misi sukses.',
             todo: ['Istirahat penuh di pesawat']
           }
@@ -761,7 +759,7 @@
       if (!currentUser) {
         return (
           <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-900 relative">
-            <img src="https://images.unsplash.com/photo-1541838634568-1afec5515259?auto=format&fit=crop&w=800&q=80" className="absolute inset-0 w-full h-full object-cover opacity-40" />
+            <img src="https://image.pollinations.ai/prompt/Kuala%20Lumpur%20Twin%20Towers%20dramatic%20sky?width=1000&height=600&nologo=true" className="absolute inset-0 w-full h-full object-cover opacity-40" />
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm text-center relative z-10">
               {isDemoMode && (
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md whitespace-nowrap">
@@ -1026,7 +1024,7 @@
       return (
         <div className="min-h-screen bg-gray-50 pb-24">
           <div className="relative h-56 bg-gray-900 rounded-b-[2rem] shadow-md overflow-hidden">
-            <img src="https://images.unsplash.com/photo-1541838634568-1afec5515259?auto=format&fit=crop&w=800&q=80" className="w-full h-full object-cover opacity-50" />
+            <img src="https://image.pollinations.ai/prompt/Kuala%20Lumpur%20skyline%20sunset?width=800&height=600&nologo=true" className="w-full h-full object-cover opacity-50" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
             <div className="absolute top-4 right-4">
               <button onClick={handleLogout} className="bg-white/20 p-2 rounded-full text-white">
