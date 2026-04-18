@@ -2,12 +2,15 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Trip Planner Malaysia</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* Mencegah highlight biru saat elemen disentuh di ponsel */
+    * { -webkit-tap-highlight-color: transparent; }
   </style>
   <script type="importmap">
     {
@@ -23,13 +26,13 @@
   </script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-<body class="bg-gray-50 antialiased">
+<body class="bg-gray-50 antialiased selection:bg-blue-200">
   <div id="root"></div>
 
   <script type="text/babel" data-type="module">
     import React, { useState, useEffect } from 'react';
     import { createRoot } from 'react-dom/client';
-    import { MapPin, Camera, ShoppingBag, Utensils, Clock, Users, CheckCircle, AlertTriangle, LogOut, ChevronRight, Info, Trash2, RefreshCw, Sun, CloudRain, CheckSquare, Compass } from 'lucide-react';
+    import { MapPin, Camera, ShoppingBag, Utensils, Clock, Users, CheckCircle, AlertTriangle, LogOut, ChevronRight, Info, Trash2, RefreshCw, Sun, CloudRain, CheckSquare, Compass, ExternalLink } from 'lucide-react';
     import { initializeApp } from 'firebase/app';
     import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
     import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
@@ -111,7 +114,7 @@
             tags: ['santai'],
             location: 'Kuala Lumpur International Airport',
             thumbnail: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=800&q=80',
-            insight: 'Persiapkan dokumen MDAC yang sudah diisi online. Kita gunakan Hiace pribadi agar tidak repot menyeret koper ke stasiun kereta.',
+            insight: 'Persiapkan dokumen MDAC yang sudah diisi online. Kita gunakan Hiace pribadi agar tidak repot menyeret koper.',
             todo: ['Lolos imigrasi autogate', 'Kumpul di titik temu', 'Masuk Hiace menuju hotel']
           },
           { 
@@ -121,7 +124,7 @@
             tags: ['foto', 'foto_modern'],
             location: 'Petronas Twin Towers',
             thumbnail: 'https://images.unsplash.com/photo-1541838634568-1afec5515259?auto=format&fit=crop&w=800&q=80',
-            insight: 'Hindari keramaian pelataran utama. Ambil foto dari Taman KLCC dekat kolam Lake Symphony atau dari Jembatan Saloma Link untuk estetika maksimal.',
+            insight: 'Ambil foto dari Taman KLCC dekat kolam Lake Symphony atau dari Jembatan Saloma Link untuk estetika maksimal.',
             todo: ['Foto berlatar air mancur Lake Symphony', 'Foto low-angle di Jembatan Saloma Link', 'Foto urban di persimpangan Yap Kwan Seng']
           },
           { 
@@ -129,9 +132,9 @@
             time: '16:30', 
             desc: 'Check-in Seeds Hotel Bukit Bintang.', 
             tags: ['santai'],
-            location: 'Bukit Bintang, Kuala Lumpur',
+            location: 'Seeds Hotel Bukit Bintang',
             thumbnail: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80',
-            insight: 'Hotel budget-boutique strategis. Lokasi dekat pusat komersial dan Jalan Alor untuk efisiensi logistik kita.',
+            insight: 'Lokasi hotel sangat dekat pusat komersial dan Jalan Alor untuk efisiensi mobilitas.',
             todo: ['Terima kunci kamar', 'Mandi dan bersih-bersih', 'Isi ulang daya ponsel']
           },
           { 
@@ -141,26 +144,26 @@
             tags: ['belanja_branded', 'foto_modern'],
             location: 'Pavilion Kuala Lumpur',
             thumbnail: 'https://images.unsplash.com/photo-1596422846543-74c6e25501f4?auto=format&fit=crop&w=800&q=80',
-            insight: 'Teater jalanan dengan lampu neon. Nikmati suasana musisi jalanan yang berbaur dengan butik internasional.',
+            insight: 'Nikmati suasana musisi jalanan yang berbaur dengan butik internasional di bawah lampu neon.',
             todo: ['Jalan santai di trotoar Bukit Bintang', 'Lihat pertunjukan pengamen', 'Foto persimpangan ikonik']
           },
           { 
             id: 'd1_a5',
             time: '19:30', 
-            desc: 'Makan malam praktis via GrabFood.', 
+            desc: 'Makan malam via GrabFood.', 
             tags: ['kuliner'], 
-            info: 'Makan di kamar lebih efisien.',
+            info: 'Makan di kamar lebih hemat energi.',
             location: 'Jalan Alor',
             thumbnail: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80',
-            insight: 'Kita pesan GrabFood ke hotel. Ini menghemat energi fisik dan mencegah harga mahal di restoran jalanan pada malam hari.',
-            todo: ['Pilih menu halal di aplikasi', 'Makan malam santai bersama tim', 'Istirahat penuh']
+            insight: 'Pesan GrabFood ke hotel menghemat energi fisik dan mencegah harga mahal di restoran jalanan.',
+            todo: ['Pilih menu halal di aplikasi', 'Makan malam bersama di kamar', 'Istirahat']
           }
         ]
       },
       {
         day: 2,
         date: '1 Mei',
-        title: 'Simbiosis Spiritual & Warisan Visual',
+        title: 'Spiritual & Warisan Visual',
         image: 'https://images.unsplash.com/photo-1518342880790-252f483d3e8e?auto=format&fit=crop&w=800&q=80',
         activities: [
           { 
@@ -168,30 +171,30 @@
             time: '08:30', 
             desc: 'Eksplorasi Batu Caves.', 
             tags: ['foto', 'foto_budaya'],
-            location: 'Batu Caves, Selangor',
+            location: 'Batu Caves',
             thumbnail: 'https://images.unsplash.com/photo-1518342880790-252f483d3e8e?auto=format&fit=crop&w=800&q=80',
-            insight: 'Kita datang pagi untuk hindari panas dan massa turis padat. Formasi gua kapur ini berusia 400 juta tahun.',
-            todo: ['Foto dengan patung emas Dewa Murugan 42,7m', 'Daki 272 anak tangga pelangi', 'Waspada kera ekor panjang']
+            insight: 'Datang pagi untuk hindari panas dan massa turis padat.',
+            todo: ['Foto dengan patung emas Dewa Murugan', 'Daki 272 anak tangga pelangi', 'Waspada kera liar']
           },
           { 
             id: 'd2_a2',
             time: '11:30', 
             desc: 'Makan Siang Halal Area Batu Caves.', 
             tags: ['kuliner', 'kuliner_hemat'],
-            location: 'Batu Caves, Selangor',
+            location: 'Batu Caves',
             thumbnail: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80',
-            insight: 'Tersedia pilihan Food Court atau Mamak dengan harga wajar sekitar RM 10 - RM 15 per porsi.',
-            todo: ['Makan paket nasi briyani', 'Pulihkan kalori untuk sore hari']
+            insight: 'Pilih paket nasi Mamak dengan harga wajar RM 10 - RM 15.',
+            todo: ['Makan paket nasi briyani', 'Pulihkan energi fisik']
           },
           { 
             id: 'd2_a3',
             time: '13:30', 
             desc: 'Kunjungan Chocolate Boutique.', 
             tags: ['oleh_oleh', 'belanja_murah'],
-            location: 'Kuala Lumpur',
+            location: 'Beryl\'s Chocolate Kingdom',
             thumbnail: 'https://images.unsplash.com/photo-1548907040-4baa42d10919?auto=format&fit=crop&w=800&q=80',
-            insight: 'Pusat komoditas ini memamerkan inovasi agrikultur Malaysia melalui produksi cokelat artisanal.',
-            todo: ['Cicipi sampel cokelat', 'Beli oleh-oleh cokelat tiramisu']
+            insight: 'Sentra inovasi cokelat lokal Malaysia.',
+            todo: ['Cicipi sampel cokelat', 'Beli cokelat tiramisu']
           },
           { 
             id: 'd2_a4',
@@ -201,25 +204,25 @@
             info: 'Siapkan kamera untuk dinding mural.',
             location: 'Kwai Chai Hong',
             thumbnail: 'https://images.unsplash.com/photo-1555940280-4566c75dfa36?auto=format&fit=crop&w=800&q=80',
-            insight: 'Kwai Chai Hong adalah gang era pra-perang yang direvitalisasi. Ada mural hiper-realis kehidupan warga Tionghoa awal abad 20.',
-            todo: ['Berfoto di depan mural interaktif', 'Tangkap cahaya lampion keemasan saat senja', 'Belanja suvenir murah']
+            insight: 'Kwai Chai Hong adalah gang mural hiper-realis awal abad 20. Tangkap cahaya lampion saat senja.',
+            todo: ['Berfoto di mural interaktif', 'Tangkap momen lampion senja', 'Belanja suvenir']
           },
           { 
             id: 'd2_a5',
             time: '19:00', 
             desc: 'Kembali ke Hotel & GrabFood.', 
             tags: ['santai'],
-            location: 'Bukit Bintang',
+            location: 'Seeds Hotel Bukit Bintang',
             thumbnail: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=800&q=80',
-            insight: 'Kembali memesan makanan lewat aplikasi untuk memaksimalkan jam istirahat Kamu di hotel.',
-            todo: ['Makan malam santai', 'Cek stok memori kamera/HP']
+            insight: 'Pesan makanan lewat aplikasi untuk memaksimalkan istirahat.',
+            todo: ['Makan malam', 'Cek stok memori HP/kamera']
           }
         ]
       },
       {
         day: 3,
         date: '2 Mei',
-        title: 'Ekspedisi Waktu Bandaraya Melaka',
+        title: 'Bandaraya Bersejarah Melaka',
         image: 'https://images.unsplash.com/photo-1582218059049-36eb8b15d918?auto=format&fit=crop&w=800&q=80',
         activities: [
           { 
@@ -229,48 +232,48 @@
             tags: ['santai'],
             location: 'Melaka',
             thumbnail: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=800&q=80',
-            insight: 'Jarak 145 km kita tempuh dengan Hiace pribadi. Kamu bisa tidur nyenyak selama perjalanan tol 2 jam ini.',
-            todo: ['Istirahat di mobil', 'Kumpulkan tenaga']
+            insight: 'Tidur nyenyak selama perjalanan tol 2 jam menggunakan Hiace.',
+            todo: ['Istirahat di mobil']
           },
           { 
             id: 'd3_a2',
             time: '10:30', 
-            desc: 'Bangunan Merah Stadthuys & Dutch Square.', 
+            desc: 'Bangunan Merah Stadthuys.', 
             tags: ['foto', 'foto_budaya'],
-            location: 'Christ Church Melaka',
+            location: 'Stadthuys Melaka',
             thumbnail: 'https://images.unsplash.com/photo-1582218059049-36eb8b15d918?auto=format&fit=crop&w=800&q=80',
-            insight: 'Peninggalan abad ke-17. Dinding bata merah terakota menyajikan kontras brilian berlatar langit biru.',
-            todo: ['Foto gedung Stadthuys', 'Lihat menara jam ikonik', 'Naik becak hias Melaka']
+            insight: 'Dinding bata merah terakota menyajikan kontras brilian dengan langit biru.',
+            todo: ['Foto gedung Stadthuys', 'Naik becak hias Melaka']
           },
           { 
             id: 'd3_a3',
             time: '12:30', 
             desc: 'Makan Siang Halal Melaka.', 
             tags: ['kuliner', 'kuliner_hemat'],
-            location: 'Jonker Street Area',
+            location: 'Jonker Street',
             thumbnail: 'https://images.unsplash.com/photo-1626804475297-41607ea0af49?auto=format&fit=crop&w=800&q=80',
-            insight: 'Rekomendasi kita adalah Kocik Kitchen untuk masakan Nyonya halal, atau Asam Pedas Claypot di Taman Kota Laksamana.',
-            todo: ['Coba hidangan Chicken Pongteh', 'Makan Asam Pedas segar', 'Minum cendol Melaka']
+            insight: 'Makan di Kocik Kitchen (Nyonya Halal) atau Asam Pedas Claypot.',
+            todo: ['Coba Chicken Pongteh', 'Makan Asam Pedas Melaka']
           },
           { 
             id: 'd3_a4',
             time: '13:30', 
             desc: 'Menelusuri Jonker Walk.', 
             tags: ['belanja_murah', 'oleh_oleh', 'foto_budaya'],
-            location: 'Jonker Street, Melaka',
+            location: 'Jonker Walk Melaka',
             thumbnail: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=800&q=80',
-            insight: 'Jalan poros budaya Peranakan (Baba Nyonya). Tempat ideal mencari barang antik dan suvenir klasik.',
-            todo: ['Susuri toko-toko lama', 'Beli pernak-pernik unik']
+            insight: 'Pusat budaya Peranakan. Ideal untuk barang antik dan suvenir.',
+            todo: ['Susuri toko lama', 'Beli pernak-pernik']
           },
           { 
             id: 'd3_a5',
             time: '16:00', 
-            desc: 'Fenomena Air Pasang Masjid Selat Melaka.', 
+            desc: 'Masjid Selat Melaka (Senja).', 
             tags: ['foto', 'foto_alam'],
             location: 'Melaka Straits Mosque',
             thumbnail: 'https://images.unsplash.com/photo-1572074360982-f326c26804d9?auto=format&fit=crop&w=800&q=80',
-            insight: 'Tiba jam 16:30 agar air laut menyentuh dasar masjid, menciptakan efek melayang. Spot senja terbaik.',
-            todo: ['Foto bingkai kubah emas berlatar laut lepas', 'Saksikan gradasi langit golden hour', 'Salat di area masjid']
+            insight: 'Tiba saat air pasang menciptakan efek masjid melayang. Sempurna untuk golden hour.',
+            todo: ['Foto siluet masjid', 'Salat di area masjid']
           },
           { 
             id: 'd3_a6',
@@ -279,15 +282,15 @@
             tags: ['santai'],
             location: 'Kuala Lumpur',
             thumbnail: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=800&q=80',
-            insight: 'Perjalanan kembali berdurasi 2 jam. Kumpulkan pesanan GrabFood di mobil agar makanan tiba bersamaan di hotel.',
-            todo: ['Pesan GrabFood dari mobil', 'Tidur santai']
+            insight: 'Kumpulkan pesanan GrabFood di mobil agar makanan siap di hotel.',
+            todo: ['Pesan GrabFood', 'Tidur di perjalanan']
           }
         ]
       },
       {
         day: 4,
         date: '3 Mei',
-        title: 'Geometri Islam & Belanja Viral',
+        title: 'Geometri & Belanja Viral',
         image: 'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=800&q=80',
         activities: [
           { 
@@ -297,28 +300,28 @@
             tags: ['foto', 'foto_budaya'],
             location: 'Dataran Merdeka',
             thumbnail: 'https://images.unsplash.com/photo-1601058269781-80cb33dc783e?auto=format&fit=crop&w=800&q=80',
-            insight: 'Alun-alun rumput masif. Dibingkai Gedung Sultan Abdul Samad yang bergaya Moorish-Mughal.',
-            todo: ['Foto dengan latar arsitektur hibrida', 'Lihat tiang bendera tertinggi']
+            insight: 'Alun-alun berumput dengan arsitektur hibrida Moorish-Mughal.',
+            todo: ['Foto di Gedung Sultan Abdul Samad', 'Lihat tiang bendera tertinggi']
           },
           { 
             id: 'd4_a2',
             time: '11:00', 
             desc: 'Eksplorasi Putrajaya.', 
             tags: ['foto', 'foto_alam', 'foto_modern'],
-            location: 'Putrajaya',
+            location: 'Putra Mosque',
             thumbnail: 'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=800&q=80',
-            insight: 'Gunakan Hiace untuk keliling monumen berskala raksasa. Fokus pada Astaka Morocco dan Masjid Putra granit mawar.',
-            todo: ['Foto ilusi ala Marrakech di Astaka Morocco', 'Foto estetis Masjid Putra', 'Menikmati angin danau']
+            insight: 'Fokus bidikan di Astaka Morocco (estetika Marrakech) dan Masjid Putra.',
+            todo: ['Foto di Astaka Morocco', 'Foto estetis Masjid Putra']
           },
           { 
             id: 'd4_a3',
             time: '13:00', 
             desc: 'Makan Siang Tepi Danau Putrajaya.', 
             tags: ['kuliner_hemat', 'kuliner'],
-            location: 'Selera Putra',
+            location: 'Ayer@8 Putrajaya',
             thumbnail: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80',
-            insight: 'Restoran Selera Putra atau Balqis Restaurant cocok untuk makan siang komunal porsi besar dengan pemandangan danau.',
-            todo: ['Makan Nasi Arab/Mandi Lamb', 'Nikmati makanan menghadap danau']
+            insight: 'Makan komunal porsi besar dengan pemandangan danau.',
+            todo: ['Makan Nasi Arab/Mandi Lamb', 'Nikmati lanskap danau']
           },
           { 
             id: 'd4_a4',
@@ -326,20 +329,20 @@
             desc: 'Suria KLCC & Pavilion Bukit Bintang.', 
             tags: ['belanja_branded', 'foto_modern'], 
             info: 'Incar kedai kopi viral.',
-            location: 'Pavilion Bukit Bintang',
+            location: 'Pavilion Kuala Lumpur',
             thumbnail: 'https://images.unsplash.com/photo-1582650535185-5a7c2957b458?auto=format&fit=crop&w=800&q=80',
-            insight: 'Tempat berkumpulnya tren ritel eksklusif viral. Kamu bisa mengunjungi Bacha Coffee dan 13DE Marzo Cafe.',
-            todo: ['Beli kopi Bacha dalam teko leher angsa', 'Beli minuman beruang viral di 13DE Marzo', 'Belanja baju/sepatu mall']
+            insight: 'Pusat ritel viral. Kunjungi Bacha Coffee dan 13DE Marzo Cafe.',
+            todo: ['Beli kopi Bacha', 'Beli minuman beruang 13DE Marzo', 'Belanja barang mall']
           },
           { 
             id: 'd4_a5',
             time: '19:30', 
             desc: 'Persiapan Pulang & GrabFood.', 
             tags: ['santai'],
-            location: 'Bukit Bintang',
+            location: 'Seeds Hotel Bukit Bintang',
             thumbnail: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80',
-            insight: 'Segera susun koper. Kita wajib tidur awal karena jadwal ekstraksi dini hari esok.',
-            todo: ['Packing semua barang', 'Makan malam terakhir via Grab']
+            insight: 'Susun koper malam ini. Wajib tidur awal untuk ekstraksi subuh.',
+            todo: ['Packing rapi', 'Makan malam terakhir']
           }
         ]
       },
@@ -356,39 +359,39 @@
             tags: ['santai'],
             location: 'Seeds Hotel Bukit Bintang',
             thumbnail: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80',
-            insight: 'Transportasi publik berhenti beroperasi dini hari. Minivan Hiace kita siaga penuh.',
-            todo: ['Cek dokumen paspor', 'Kumpul lobi tepat waktu']
+            insight: 'Transportasi publik belum buka. Hiace kita siaga penuh.',
+            todo: ['Cek dokumen', 'Kumpul lobi']
           },
           { 
             id: 'd5_a2',
             time: '03:00', 
-            desc: 'Keberangkatan Menuju KLIA2.', 
+            desc: 'Berangkat ke KLIA2.', 
             tags: ['santai'], 
-            info: 'Wajib berangkat jam 03:00.',
-            location: 'Kuala Lumpur International Airport 2',
+            info: 'Wajib berangkat tepat 03:00.',
+            location: 'KLIA2',
             thumbnail: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=800&q=80',
-            insight: 'Jalan bebas hambatan sangat lancar jam segini. Estimasi 58 km ditempuh dalam 45 menit.',
-            todo: ['Lanjutkan tidur di mobil Hiace']
+            insight: 'Jalan bebas hambatan lancar. Estimasi 45 menit perjalanan.',
+            todo: ['Tidur di Hiace']
           },
           { 
             id: 'd5_a3',
             time: '04:15', 
-            desc: 'Proses Prapenerbangan KLIA2.', 
+            desc: 'Proses KLIA2.', 
             tags: ['santai'], 
             location: 'KLIA2',
             thumbnail: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=800&q=80',
-            insight: 'Tiba 3 jam awal sangat esensial. Antrean drop bagasi AirAsia sering padat dan gerbang masuk lumayan jauh.',
-            todo: ['Drop bagasi', 'Lewati imigrasi', 'Jalan kaki ke boarding gate']
+            insight: 'Antrean drop bagasi AirAsia padat. Gerbang masuk jauh, manfaatkan waktu.',
+            todo: ['Drop bagasi', 'Lewati imigrasi']
           },
           { 
             id: 'd5_a4',
             time: '07:15', 
             desc: 'Penerbangan Kembali.', 
             tags: ['santai'],
-            location: 'Flight',
+            location: 'Kuala Lumpur International Airport',
             thumbnail: 'https://images.unsplash.com/photo-1517400508447-f8dd518b86db?auto=format&fit=crop&w=800&q=80',
-            insight: 'Misi dokumentasi visual dan penjelajahan budaya Malaysia selesai.',
-            todo: ['Istirahat total di pesawat']
+            insight: 'Misi sukses.',
+            todo: ['Istirahat penuh di pesawat']
           }
         ]
       }
@@ -497,7 +500,7 @@
           setAdminPassword('');
           setAdminError('');
         } else {
-          setAdminError("Password yang dimasukkan salah.");
+          setAdminError("Password salah.");
         }
       };
 
@@ -509,7 +512,7 @@
       const handleProfileSubmit = async (e) => {
         e.preventDefault();
         if (!tempProfile.name.trim()) {
-          setProfileError('Mohon isi nama panggilan atau nama asli Kamu.');
+          setProfileError('Isi nama Kamu.');
           return;
         }
         setProfileError('');
@@ -609,87 +612,87 @@
         const allChecked = act.todo && act.todo.length > 0 && act.todo.every((_, idx) => userTasks.includes(`${act.id}_t${idx}`));
 
         return (
-          <div className="relative pl-6 pb-8">
-            <div className="absolute left-3 top-6 bottom-0 w-0.5 bg-blue-200"></div>
-            <div className={`absolute left-[0.35rem] top-1 w-6 h-6 rounded-full flex items-center justify-center border-2 border-white shadow-sm z-10 ${allChecked ? 'bg-green-500' : 'bg-blue-600'}`}>
-               {allChecked ? <CheckCircle className="w-3 h-3 text-white" /> : <Clock className="w-3 h-3 text-white" />}
+          <div className="relative pl-5 pb-6">
+            <div className="absolute left-[9px] top-6 bottom-0 w-0.5 bg-blue-200"></div>
+            <div className={`absolute left-0 top-1.5 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm z-10 ${allChecked ? 'bg-green-500' : 'bg-blue-600'}`}>
+               {allChecked ? <CheckCircle className="w-2.5 h-2.5 text-white" /> : <Clock className="w-2.5 h-2.5 text-white" />}
             </div>
 
-            <div className={`rounded-2xl overflow-hidden shadow-lg transition-all duration-300 backdrop-blur-md bg-white/90 border ${match ? 'border-blue-400 ring-2 ring-blue-100' : 'border-white/50'}`}>
-              <div className="relative h-48 w-full group cursor-pointer overflow-hidden">
+            <div className={`rounded-2xl overflow-hidden shadow-md transition-all duration-300 bg-white border ${match ? 'border-blue-400 ring-1 ring-blue-100' : 'border-gray-100'}`}>
+              <div className="relative h-32 md:h-48 w-full group overflow-hidden">
                 <img src={act.thumbnail} alt={act.desc} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex flex-col justify-end p-4">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4">
                   <div className="flex justify-between items-end">
                     <div>
-                      <span className="text-blue-300 font-bold text-sm mb-1 block">{act.time}</span>
-                      <h3 className="text-white text-lg font-bold leading-tight">{act.desc}</h3>
+                      <span className="text-blue-300 font-bold text-xs mb-1 block">{act.time}</span>
+                      <h3 className="text-white text-base md:text-lg font-bold leading-tight">{act.desc}</h3>
                     </div>
-                    {match && (
-                      <span className="bg-blue-600 text-white text-[10px] px-2 py-1 rounded-md font-bold shadow-md">
-                        Cocok Buat Kamu!
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>
 
               <div className="p-4">
+                {match && (
+                  <div className="mb-3">
+                    <span className="inline-block bg-blue-600 text-white text-[10px] px-2 py-1 rounded font-bold">Rekomendasi Untukmu</span>
+                  </div>
+                )}
+                
                 <div className="flex flex-wrap gap-2 mb-4">
                   {act.tags.map((tag, tIdx) => (
-                    <span key={tIdx} className="text-xs bg-gray-100/80 text-gray-700 px-2.5 py-1 rounded-md font-medium border border-gray-200/50">
+                    <span key={tIdx} className="text-[10px] md:text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-md font-bold border border-gray-200">
                       {formatTag(tag)}
                     </span>
                   ))}
                 </div>
 
                 {act.insight && (
-                  <div className="mb-4 bg-blue-50 p-3 rounded-xl border border-blue-100 text-sm text-blue-900 leading-relaxed shadow-sm">
+                  <div className="mb-4 bg-blue-50 p-3 rounded-xl border border-blue-100 text-xs md:text-sm text-blue-900 shadow-sm">
                     <Compass className="w-4 h-4 inline-block mr-2 mb-0.5 text-blue-600" />
-                    <span className="font-semibold block mb-1">Panduan Lokasi:</span>
-                    {act.insight}
+                    <span className="font-bold">Tips:</span> {act.insight}
                   </div>
                 )}
 
+                {/* Tombol Peta Pintar pengganti Iframe untuk Mobile */}
                 {act.location && (
-                  <div className="mb-4 rounded-xl overflow-hidden border border-gray-200 h-24 relative group">
-                    <iframe 
-                      title={`Map ${act.location}`}
-                      width="100%" 
-                      height="100%" 
-                      frameBorder="0" 
-                      style={{border:0}} 
-                      src={`https://www.google.com/maps?q=${encodeURIComponent(act.location)}&output=embed`} 
-                      allowFullScreen
-                    ></iframe>
-                    <div className="absolute inset-0 bg-black/5 pointer-events-none group-hover:bg-transparent transition-colors"></div>
-                  </div>
+                  <a 
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(act.location)}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="mb-4 flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-200 text-xs md:text-sm font-bold text-gray-700 active:bg-gray-200 transition-colors"
+                  >
+                    <span className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-red-500" /> Buka Peta {act.location.split(',')[0]}
+                    </span>
+                    <ExternalLink className="w-4 h-4 text-gray-400" />
+                  </a>
                 )}
 
                 {act.info && (
-                  <div className="flex mb-4 bg-yellow-50/80 p-3 rounded-xl border border-yellow-100 text-sm text-yellow-800">
-                    <Info className="w-5 h-5 mr-2 flex-shrink-0 text-yellow-600" />
+                  <div className="flex mb-4 bg-yellow-50 p-3 rounded-xl border border-yellow-100 text-xs md:text-sm text-yellow-800">
+                    <Info className="w-4 h-4 mr-2 flex-shrink-0 text-yellow-600" />
                     <p>{act.info}</p>
                   </div>
                 )}
 
                 {act.todo && act.todo.length > 0 && (
                   <div className="space-y-2 mt-2">
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Yang bisa dilakukan:</p>
+                    <p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Daftar Kegiatan:</p>
                     {act.todo.map((task, idx) => {
                       const taskId = `${act.id}_t${idx}`;
                       const isChecked = userTasks.includes(taskId);
                       const canEdit = currentUser.role === 'user';
                       
                       return (
-                        <label key={idx} className={`flex items-start gap-3 p-2 rounded-lg transition-colors cursor-pointer ${isChecked ? 'bg-green-50/50' : 'hover:bg-gray-50'}`}>
+                        <label key={idx} className={`flex items-start gap-3 p-2 rounded-lg transition-colors cursor-pointer ${isChecked ? 'bg-green-50' : 'active:bg-gray-50'}`}>
                           <input 
                             type="checkbox" 
                             checked={isChecked}
                             onChange={() => toggleTask(taskId)}
                             disabled={!canEdit}
-                            className="mt-1 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+                            className="mt-0.5 w-4 h-4 md:w-5 md:h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                           />
-                          <span className={`text-sm ${isChecked ? 'line-through text-gray-400' : 'text-gray-700 font-medium'}`}>
+                          <span className={`text-xs md:text-sm leading-tight mt-0.5 ${isChecked ? 'line-through text-gray-400' : 'text-gray-700 font-bold'}`}>
                             {task}
                           </span>
                         </label>
@@ -704,39 +707,40 @@
       };
 
       const WeatherWidget = () => (
-        <div className="flex gap-4 mb-6 overflow-x-auto pb-2 hide-scrollbar">
-          <div className="bg-white/80 backdrop-blur-sm border border-gray-100 p-3 rounded-2xl flex-shrink-0 flex items-center gap-3 shadow-sm min-w-[140px]">
-            <div className="bg-orange-100 p-2 rounded-full"><Sun className="w-5 h-5 text-orange-500" /></div>
-            <div><p className="text-xs text-gray-500">Kuala Lumpur</p><p className="font-bold text-gray-800">32°C <span className="font-normal text-sm">Cerah</span></p></div>
+        <div className="flex gap-3 mb-6 overflow-x-auto pb-2 hide-scrollbar snap-x">
+          <div className="bg-white border border-gray-100 p-3 rounded-2xl flex-shrink-0 flex items-center gap-3 shadow-sm min-w-[130px] snap-center">
+            <div className="bg-orange-50 p-2 rounded-full"><Sun className="w-4 h-4 text-orange-500" /></div>
+            <div><p className="text-[10px] text-gray-500 font-bold uppercase">Kuala Lumpur</p><p className="font-extrabold text-gray-800 text-sm">32°C</p></div>
           </div>
-          <div className="bg-white/80 backdrop-blur-sm border border-gray-100 p-3 rounded-2xl flex-shrink-0 flex items-center gap-3 shadow-sm min-w-[140px]">
-            <div className="bg-blue-100 p-2 rounded-full"><CloudRain className="w-5 h-5 text-blue-500" /></div>
-            <div><p className="text-xs text-gray-500">Melaka</p><p className="font-bold text-gray-800">28°C <span className="font-normal text-sm">Hujan</span></p></div>
+          <div className="bg-white border border-gray-100 p-3 rounded-2xl flex-shrink-0 flex items-center gap-3 shadow-sm min-w-[130px] snap-center">
+            <div className="bg-blue-50 p-2 rounded-full"><CloudRain className="w-4 h-4 text-blue-500" /></div>
+            <div><p className="text-[10px] text-gray-500 font-bold uppercase">Melaka</p><p className="font-extrabold text-gray-800 text-sm">28°C</p></div>
           </div>
         </div>
       );
 
       const TripSummary = () => (
-        <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-5 mb-8 text-white shadow-lg">
-          <h3 className="font-bold text-lg mb-2 flex items-center">
-            <Compass className="w-5 h-5 mr-2" /> Ringkasan Perjalanan
+        <div className="bg-blue-600 rounded-2xl p-4 mb-8 text-white shadow-md">
+          <h3 className="font-bold text-base mb-2 flex items-center">
+            <Compass className="w-4 h-4 mr-2" /> Ringkasan Perjalanan
           </h3>
-          <p className="text-sm text-blue-50 leading-relaxed">
-            Tur 5 hari melintasi Kuala Lumpur, Melaka, dan Putrajaya. Rute ini dirancang untuk optimalisasi spot foto viral media sosial. Kita menggunakan Minivan Hiace pribadi untuk efisiensi logistik. Manajemen energi dijaga ketat lewat pemesanan GrabFood langsung ke hotel saat malam.
+          <p className="text-xs text-blue-50 leading-relaxed">
+            Tur 5 hari: KL, Melaka, Putrajaya. Fokus pada efisiensi waktu, foto viral, dan kenyamanan. Transportasi menggunakan Minivan Hiace.
           </p>
         </div>
       );
 
+      // Layar Login
       if (!currentUser) {
         return (
-          <div className="min-h-screen bg-cover bg-center flex flex-col items-center justify-center p-4 relative" style={{backgroundImage: 'url(https://images.unsplash.com/photo-1541838634568-1afec5515259?auto=format&fit=crop&w=1920&q=80)'}}>
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
-            <div className="bg-white/95 backdrop-blur-lg p-8 rounded-3xl shadow-2xl w-full max-w-md text-center relative z-10 border border-white/20">
-              <div className="bg-gradient-to-br from-blue-500 to-blue-700 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg transform rotate-3 hover:rotate-0 transition-transform">
-                <MapPin className="text-white w-8 h-8" />
+          <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-900 relative">
+            <img src="https://images.unsplash.com/photo-1541838634568-1afec5515259?auto=format&fit=crop&w=800&q=80" className="absolute inset-0 w-full h-full object-cover opacity-40" />
+            <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm text-center relative z-10">
+              <div className="bg-blue-600 w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <MapPin className="text-white w-7 h-7" />
               </div>
-              <h1 className="text-3xl font-extrabold text-gray-900 mb-2 tracking-tight">Trip Planner</h1>
-              <p className="text-blue-600 font-semibold mb-8 uppercase tracking-widest text-sm">Edisi Malaysia</p>
+              <h1 className="text-2xl font-extrabold text-gray-900 mb-1">Trip Planner</h1>
+              <p className="text-blue-600 font-bold text-xs uppercase tracking-widest mb-6">Edisi Malaysia</p>
               
               <form onSubmit={handleLoginSubmit} className="space-y-4">
                 <div>
@@ -744,36 +748,36 @@
                     type="text"
                     value={loginName}
                     onChange={(e) => setLoginName(e.target.value)}
-                    className="w-full p-4 border border-gray-200 bg-gray-50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white text-center font-medium shadow-inner transition-all"
-                    placeholder="Ketik nama Kamu di sini..."
+                    className="w-full p-4 border border-gray-200 bg-gray-50 rounded-xl text-base text-center font-bold outline-none focus:border-blue-500"
+                    placeholder="Ketik nama Kamu..."
                     required
                   />
                 </div>
-                <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white font-bold py-4 rounded-xl hover:shadow-lg hover:from-blue-700 hover:to-blue-900 transition-all transform hover:-translate-y-0.5">
-                  Masuk & Mulai Eksplorasi
+                <button type="submit" className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl active:bg-blue-700 transition-colors shadow-md text-sm">
+                  Masuk Eksplorasi
                 </button>
               </form>
 
-              <button onClick={() => setShowAdminModal(true)} className="mt-8 text-sm text-gray-400 hover:text-gray-800 transition-colors font-medium">
-                Masuk sebagai Admin
+              <button onClick={() => setShowAdminModal(true)} className="mt-6 text-xs text-gray-400 font-bold active:text-gray-800 py-2 px-4">
+                Login Admin
               </button>
             </div>
 
             {showAdminModal && (
-              <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-                  <h3 className="text-xl font-extrabold text-gray-900 mb-4">Akses Super Admin</h3>
+              <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-2xl p-6 w-full max-w-xs shadow-2xl">
+                  <h3 className="text-lg font-extrabold text-gray-900 mb-4">Akses Admin</h3>
                   <input
                     type="password"
                     value={adminPassword}
                     onChange={(e) => setAdminPassword(e.target.value)}
-                    className="w-full p-4 border border-gray-200 rounded-xl mb-2 focus:ring-2 focus:ring-blue-500"
-                    placeholder="Masukkan sandi..."
+                    className="w-full p-3 border border-gray-200 rounded-xl mb-2 text-base outline-none focus:border-blue-500"
+                    placeholder="Sandi..."
                   />
-                  {adminError && <p className="text-red-500 text-sm mb-4 font-medium">{adminError}</p>}
-                  <div className="flex gap-3 justify-end mt-4">
-                    <button onClick={() => {setShowAdminModal(false); setAdminError(''); setAdminPassword('');}} className="px-5 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-bold transition">Batal</button>
-                    <button onClick={handleAdminSubmit} className="px-5 py-3 text-white bg-blue-600 hover:bg-blue-700 rounded-xl font-bold transition">Masuk</button>
+                  {adminError && <p className="text-red-500 text-xs mb-4 font-bold">{adminError}</p>}
+                  <div className="flex gap-2 justify-end mt-4">
+                    <button onClick={() => {setShowAdminModal(false); setAdminError(''); setAdminPassword('');}} className="px-4 py-2.5 text-gray-600 bg-gray-100 rounded-xl font-bold text-sm">Batal</button>
+                    <button onClick={handleAdminSubmit} className="px-4 py-2.5 text-white bg-blue-600 rounded-xl font-bold text-sm">Masuk</button>
                   </div>
                 </div>
               </div>
@@ -782,33 +786,34 @@
         );
       }
 
+      // Layar Form Profil & Survei
       if (currentUser.role === 'user' && !currentUser.hasCompletedSurvey) {
         if (surveyStep === 0) {
           return (
-            <div className="min-h-screen bg-gray-50 flex flex-col p-4 font-sans">
-              <header className="flex justify-between items-center mb-8 bg-white p-4 rounded-2xl shadow-sm">
-                <h1 className="text-xl font-bold text-gray-800 flex items-center"><CheckSquare className="w-5 h-5 mr-2 text-blue-600"/> Data Diri</h1>
-                <button onClick={handleLogout} className="text-gray-400 hover:text-red-500 transition-colors bg-gray-50 p-2 rounded-full">
+            <div className="min-h-screen bg-gray-50 p-4 flex flex-col">
+              <header className="flex justify-between items-center mb-6 bg-white p-4 rounded-2xl shadow-sm">
+                <h1 className="text-lg font-extrabold text-gray-800 flex items-center"><CheckSquare className="w-5 h-5 mr-2 text-blue-600"/> Data Diri</h1>
+                <button onClick={handleLogout} className="text-gray-400 active:text-red-500 bg-gray-50 p-2 rounded-full">
                   <LogOut className="w-5 h-5" />
                 </button>
               </header>
 
-              <form onSubmit={handleProfileSubmit} className="flex-1 flex flex-col max-w-md mx-auto w-full">
-                <div className="bg-white p-8 rounded-3xl shadow-lg border border-gray-100 space-y-6">
-                  {profileError && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm font-medium">{profileError}</div>}
+              <form onSubmit={handleProfileSubmit} className="flex-1 flex flex-col w-full max-w-sm mx-auto">
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-5">
+                  {profileError && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-xs font-bold">{profileError}</div>}
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Nama Panggilan / Asli</label>
-                    <input type="text" value={tempProfile.name} onChange={e => setTempProfile({...tempProfile, name: e.target.value})} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all" placeholder="Masukkan nama Kamu"/>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Nama Panggilan</label>
+                    <input type="text" value={tempProfile.name} onChange={e => setTempProfile({...tempProfile, name: e.target.value})} className="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500" placeholder="Nama Kamu"/>
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Pantangan Makanan / Alergi</label>
-                    <input type="text" value={tempProfile.diet} onChange={e => setTempProfile({...tempProfile, diet: e.target.value})} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all" placeholder="Contoh: Alergi udang (Kosongkan jika tidak ada)"/>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Alergi Makanan</label>
+                    <input type="text" value={tempProfile.diet} onChange={e => setTempProfile({...tempProfile, diet: e.target.value})} className="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500" placeholder="Kosongkan jika aman"/>
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Kebutuhan Khusus</label>
-                    <textarea value={tempProfile.needs} onChange={e => setTempProfile({...tempProfile, needs: e.target.value})} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all min-h-[100px]" placeholder="Contoh: Mudah mabuk perjalanan (Kosongkan jika tidak ada)"></textarea>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Kebutuhan Khusus</label>
+                    <textarea value={tempProfile.needs} onChange={e => setTempProfile({...tempProfile, needs: e.target.value})} className="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500 min-h-[80px]" placeholder="Mudah mabuk, dsb."></textarea>
                   </div>
-                  <button type="submit" className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 shadow-md transition-all">Lanjut ke Kuesioner</button>
+                  <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl active:bg-blue-700 shadow-md text-sm mt-2">Lanjut Kuesioner</button>
                 </div>
               </form>
             </div>
@@ -819,28 +824,28 @@
         const question = QUESTIONS[questionIndex];
 
         return (
-          <div className="min-h-screen bg-gray-50 flex flex-col p-4">
-            <header className="flex justify-between items-center mb-8 bg-white p-4 rounded-2xl shadow-sm">
-              <h1 className="text-xl font-bold text-gray-800">Kuesioner Minat</h1>
-              <button onClick={handleLogout} className="text-gray-400 hover:text-red-500 bg-gray-50 p-2 rounded-full">
+          <div className="min-h-screen bg-gray-50 p-4 flex flex-col">
+            <header className="flex justify-between items-center mb-6 bg-white p-4 rounded-2xl shadow-sm">
+              <h1 className="text-lg font-extrabold text-gray-800">Kuesioner</h1>
+              <button onClick={handleLogout} className="text-gray-400 active:text-red-500 bg-gray-50 p-2 rounded-full">
                 <LogOut className="w-5 h-5" />
               </button>
             </header>
 
-            <div className="flex-1 flex flex-col justify-center max-w-md mx-auto w-full">
-              <div className="mb-10 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-                <p className="text-xs text-blue-600 font-bold tracking-widest uppercase mb-3">Pertanyaan {questionIndex + 1} dari {QUESTIONS.length}</p>
-                <div className="w-full bg-gray-100 rounded-full h-2 mb-6">
-                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500" style={{ width: `${((questionIndex + 1) / QUESTIONS.length) * 100}%` }}></div>
+            <div className="flex-1 flex flex-col w-full max-w-sm mx-auto">
+              <div className="mb-6 bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
+                <p className="text-[10px] text-blue-600 font-bold uppercase mb-2">Pertanyaan {questionIndex + 1} dari {QUESTIONS.length}</p>
+                <div className="w-full bg-gray-100 rounded-full h-1.5 mb-4">
+                  <div className="bg-blue-500 h-1.5 rounded-full transition-all" style={{ width: `${((questionIndex + 1) / QUESTIONS.length) * 100}%` }}></div>
                 </div>
-                <h2 className="text-2xl font-extrabold text-gray-800 leading-tight">{question.text}</h2>
+                <h2 className="text-xl font-extrabold text-gray-800 leading-snug">{question.text}</h2>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {question.options.map((option, idx) => (
-                  <button key={idx} onClick={() => handleAnswer(question.id, option.tags)} className="w-full p-5 bg-white border-2 border-gray-100 rounded-2xl text-left hover:border-blue-500 hover:bg-blue-50 hover:shadow-md transition-all font-semibold text-gray-700 text-lg flex items-center justify-between group">
-                    {option.text}
-                    <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-blue-500 transition-colors" />
+                  <button key={idx} onClick={() => handleAnswer(question.id, option.tags)} className="w-full p-4 bg-white border border-gray-200 rounded-2xl text-left active:border-blue-500 active:bg-blue-50 font-bold text-gray-700 text-sm flex items-center justify-between shadow-sm">
+                    <span className="pr-4">{option.text}</span>
+                    <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
                   </button>
                 ))}
               </div>
@@ -849,77 +854,90 @@
         );
       }
 
+      // Layar Admin
       if (currentUser.role === 'admin') {
         return (
-          <div className="min-h-screen bg-gray-100 pb-20 font-sans">
-            <div className="bg-gradient-to-r from-blue-700 to-blue-900 text-white p-6 shadow-xl rounded-b-[2.5rem] relative overflow-hidden">
-              <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1541838634568-1afec5515259?auto=format&fit=crop&w=800&q=80')] opacity-10 mix-blend-overlay"></div>
-              <div className="relative z-10 flex justify-between items-center mb-4 pt-4">
-                <h1 className="text-2xl font-extrabold tracking-tight">Pusat Komando</h1>
-                <button onClick={handleLogout} className="bg-white/20 p-2 rounded-full hover:bg-white/30 backdrop-blur-sm transition">
-                  <LogOut className="w-5 h-5" />
+          <div className="min-h-screen bg-gray-50 pb-20">
+            <div className="bg-blue-700 text-white p-5 rounded-b-[2rem] shadow-md">
+              <div className="flex justify-between items-center mb-2">
+                <h1 className="text-xl font-extrabold">Pusat Komando</h1>
+                <button onClick={handleLogout} className="bg-white/20 p-2 rounded-full">
+                  <LogOut className="w-4 h-4" />
                 </button>
               </div>
-              <p className="relative z-10 opacity-90 font-medium">Pantau pergerakan, status, dan minat 9 peserta secara live.</p>
+              <p className="opacity-90 text-xs font-medium">Pantau 9 peserta secara live.</p>
             </div>
 
-            <div className="max-w-6xl mx-auto px-4 mt-8">
-              <div className="bg-orange-50 border-l-4 border-orange-500 p-5 rounded-r-xl shadow-sm mb-8">
-                <h3 className="font-bold text-orange-800 flex items-center mb-2">
-                  <AlertTriangle className="w-5 h-5 mr-2" /> Pengingat Krusial Logistik
+            <div className="max-w-4xl mx-auto px-4 mt-6">
+              <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-r-xl mb-6 shadow-sm">
+                <h3 className="font-bold text-orange-800 flex items-center mb-1 text-sm">
+                  <AlertTriangle className="w-4 h-4 mr-2" /> Pengingat Logistik
                 </h3>
-                <ul className="list-disc list-inside text-sm text-orange-700 space-y-1 font-medium">
-                  <li>Kepulangan (07:15): Wajib berangkat dari hotel pukul 03:00 pagi.</li>
-                  <li>Makan Malam: Kumpulkan pesanan GrabFood di mobil menuju hotel.</li>
+                <ul className="list-disc list-inside text-xs text-orange-700 font-medium">
+                  <li>03:00 Pagi berangkat dari hotel.</li>
+                  <li>Kumpulkan pesanan GrabFood di mobil.</li>
                 </ul>
               </div>
 
-              <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                <Users className="w-6 h-6 mr-2 text-blue-600" /> Monitor Pasukan
+              <h2 className="text-lg font-extrabold text-gray-800 mb-4 flex items-center">
+                <Users className="w-5 h-5 mr-2 text-blue-600" /> Monitor Pasukan
               </h2>
-              <div className="bg-white rounded-2xl shadow-sm mb-10 overflow-hidden border border-gray-100">
+
+              {/* Tampilan Mobile Kartu untuk Tabel Admin */}
+              <div className="md:hidden space-y-4 mb-8">
+                {participants.filter(u => u.role !== 'admin').map(user => (
+                  <div key={user.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="font-bold text-gray-800">{user.realName || user.name}</span>
+                      {user.hasCompletedSurvey 
+                        ? <span className="inline-flex items-center text-green-700 bg-green-50 px-2 py-1 rounded text-[10px] font-bold"><CheckCircle className="w-3 h-3 mr-1"/> Selesai</span>
+                        : <span className="text-gray-500 bg-gray-50 px-2 py-1 rounded text-[10px] font-bold">Menunggu</span>
+                      }
+                    </div>
+                    <div className="text-xs text-gray-600 mb-1"><span className="font-bold">Diet:</span> {user.diet || '-'}</div>
+                    <div className="text-xs text-gray-600 mb-3"><span className="font-bold">Catatan:</span> {user.needs || '-'}</div>
+                    <div className="flex flex-wrap gap-1 mb-4">
+                      {user.interests.map((tag, i) => (
+                        <span key={i} className="bg-blue-50 text-blue-700 text-[10px] px-2 py-1 rounded font-bold border border-blue-100">{formatTag(tag)}</span>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => setModalConfig({ isOpen: true, type: 'reset', user })} className="flex-1 py-2 bg-yellow-50 text-yellow-700 rounded-xl font-bold text-xs flex justify-center items-center"><RefreshCw className="w-3 h-3 mr-1"/> Reset</button>
+                      <button onClick={() => setModalConfig({ isOpen: true, type: 'delete', user })} className="flex-1 py-2 bg-red-50 text-red-700 rounded-xl font-bold text-xs flex justify-center items-center"><Trash2 className="w-3 h-3 mr-1"/> Hapus</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Tampilan Desktop Tabel */}
+              <div className="hidden md:block bg-white rounded-2xl shadow-sm mb-10 overflow-hidden border border-gray-100">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm whitespace-nowrap">
                     <thead className="bg-gray-50 border-b border-gray-100">
                       <tr>
-                        <th className="p-4 font-bold text-gray-600 uppercase tracking-wider text-xs">Nama</th>
-                        <th className="p-4 font-bold text-gray-600 uppercase tracking-wider text-xs">Status</th>
-                        <th className="p-4 font-bold text-gray-600 uppercase tracking-wider text-xs">Diet</th>
-                        <th className="p-4 font-bold text-gray-600 uppercase tracking-wider text-xs">Catatan</th>
-                        <th className="p-4 font-bold text-gray-600 uppercase tracking-wider text-xs">Minat Utama</th>
-                        <th className="p-4 font-bold text-gray-600 uppercase tracking-wider text-xs text-center">Aksi</th>
+                        <th className="p-4 font-bold text-gray-600 text-xs uppercase">Nama</th>
+                        <th className="p-4 font-bold text-gray-600 text-xs uppercase">Status</th>
+                        <th className="p-4 font-bold text-gray-600 text-xs uppercase">Diet</th>
+                        <th className="p-4 font-bold text-gray-600 text-xs uppercase">Minat</th>
+                        <th className="p-4 font-bold text-center text-gray-600 text-xs uppercase">Aksi</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
                       {participants.filter(u => u.role !== 'admin').map(user => (
-                        <tr key={user.id} className="hover:bg-blue-50/50 transition-colors">
-                          <td className="p-4 font-bold text-gray-800">{user.realName || user.name}</td>
+                        <tr key={user.id}>
+                          <td className="p-4 font-bold">{user.realName || user.name}</td>
+                          <td className="p-4">{user.hasCompletedSurvey ? <span className="text-green-600 text-xs font-bold">Selesai</span> : <span className="text-gray-400 text-xs">Menunggu</span>}</td>
+                          <td className="p-4 text-xs">{user.diet || '-'}</td>
                           <td className="p-4">
-                            {user.hasCompletedSurvey 
-                              ? <span className="inline-flex items-center text-green-700 bg-green-100 px-2.5 py-1 rounded-md text-xs font-bold"><CheckCircle className="w-3 h-3 mr-1"/> Selesai</span>
-                              : <span className="text-gray-500 bg-gray-100 px-2.5 py-1 rounded-md text-xs font-bold">Menunggu</span>
-                            }
-                          </td>
-                          <td className="p-4 text-gray-600">{user.diet || '-'}</td>
-                          <td className="p-4 text-gray-600">{user.needs || '-'}</td>
-                          <td className="p-4">
-                            <div className="flex flex-wrap gap-1">
+                            <div className="flex gap-1">
                               {user.interests.slice(0, 2).map((tag, i) => (
-                                <span key={i} className="bg-blue-50 text-blue-700 text-[10px] px-2 py-1 rounded font-bold border border-blue-100">
-                                  {formatTag(tag)}
-                                </span>
+                                <span key={i} className="bg-blue-50 text-blue-700 text-[10px] px-2 py-1 rounded font-bold">{formatTag(tag)}</span>
                               ))}
                             </div>
                           </td>
-                          <td className="p-4 text-center">
-                            <div className="flex justify-center gap-2">
-                              <button onClick={() => setModalConfig({ isOpen: true, type: 'reset', user })} className="p-2 bg-gray-100 text-gray-600 hover:bg-yellow-100 hover:text-yellow-600 rounded-lg transition" title="Reset">
-                                <RefreshCw className="w-4 h-4" />
-                              </button>
-                              <button onClick={() => setModalConfig({ isOpen: true, type: 'delete', user })} className="p-2 bg-gray-100 text-gray-600 hover:bg-red-100 hover:text-red-600 rounded-lg transition" title="Hapus">
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
+                          <td className="p-4 text-center flex justify-center gap-2">
+                            <button onClick={() => setModalConfig({ isOpen: true, type: 'reset', user })} className="p-2 bg-gray-50 rounded"><RefreshCw className="w-4 h-4 text-gray-600"/></button>
+                            <button onClick={() => setModalConfig({ isOpen: true, type: 'delete', user })} className="p-2 bg-red-50 rounded"><Trash2 className="w-4 h-4 text-red-600"/></button>
                           </td>
                         </tr>
                       ))}
@@ -928,16 +946,16 @@
                 </div>
               </div>
 
-              <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                <MapPin className="w-6 h-6 mr-2 text-blue-600" /> Jadwal Harian
+              <h2 className="text-lg font-extrabold text-gray-800 mb-4 flex items-center">
+                <MapPin className="w-5 h-5 mr-2 text-blue-600" /> Jadwal Harian
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {ITINERARY.map((day, idx) => (
-                  <div key={idx} className="bg-gray-50 rounded-3xl p-6 border border-gray-200">
-                    <div className="mb-6">
-                      <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase mb-2 inline-block">Hari {day.day}</span>
-                      <h3 className="text-2xl font-extrabold text-gray-900">{day.title}</h3>
-                      <p className="text-gray-500 font-medium">{day.date}</p>
+                  <div key={idx} className="bg-white rounded-3xl p-4 border border-gray-100 shadow-sm">
+                    <div className="mb-4">
+                      <span className="bg-blue-600 text-white px-2.5 py-1 rounded-md text-[10px] font-bold uppercase mb-1 inline-block">Hari {day.day}</span>
+                      <h3 className="text-lg font-extrabold text-gray-900 leading-tight">{day.title}</h3>
+                      <p className="text-gray-500 font-bold text-xs">{day.date}</p>
                     </div>
                     <div className="space-y-0">
                       {day.activities.map((act, i) => (
@@ -950,41 +968,40 @@
             </div>
 
             {modalConfig.isOpen && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                  <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl transform scale-100 transition-all">
-                    <h3 className="text-xl font-extrabold text-gray-900 mb-2">Konfirmasi Tindakan</h3>
-                    <p className="text-gray-600 mb-8 font-medium leading-relaxed">
-                      {modalConfig.type === 'delete' 
-                        ? `Kamu yakin ingin menghapus data ${modalConfig.user.name}?`
-                        : `Kamu yakin ingin mereset kuesioner ${modalConfig.user.name}?`}
-                    </p>
-                    <div className="flex gap-3 justify-end">
-                      <button onClick={() => setModalConfig({ isOpen: false, type: '', user: null })} className="px-5 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-bold transition">Batal</button>
-                      <button onClick={executeAction} className={`px-5 py-3 text-white rounded-xl font-bold transition ${modalConfig.type === 'delete' ? 'bg-red-600 hover:bg-red-700' : 'bg-yellow-500 hover:bg-yellow-600'}`}>Ya, Lanjutkan</button>
-                    </div>
+              <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-2xl p-6 w-full max-w-xs shadow-2xl">
+                  <h3 className="text-lg font-extrabold text-gray-900 mb-2">Konfirmasi</h3>
+                  <p className="text-gray-600 mb-6 text-sm font-medium">
+                    {modalConfig.type === 'delete' ? `Hapus data ${modalConfig.user.name}?` : `Reset kuesioner ${modalConfig.user.name}?`}
+                  </p>
+                  <div className="flex gap-2 justify-end">
+                    <button onClick={() => setModalConfig({ isOpen: false, type: '', user: null })} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-xl font-bold text-sm">Batal</button>
+                    <button onClick={executeAction} className={`px-4 py-2 text-white rounded-xl font-bold text-sm ${modalConfig.type === 'delete' ? 'bg-red-600' : 'bg-yellow-500'}`}>Ya, Lanjut</button>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
           </div>
         );
       }
 
+      // Layar Utama Peserta
       return (
-        <div className="min-h-screen bg-[#F8FAFC] pb-24 font-sans">
-          <div className="relative h-64 bg-gray-900 overflow-hidden rounded-b-[2.5rem] shadow-lg">
-            <img src="https://images.unsplash.com/photo-1541838634568-1afec5515259?auto=format&fit=crop&w=1000&q=80" alt="KL" className="w-full h-full object-cover opacity-60 mix-blend-overlay" />
+        <div className="min-h-screen bg-gray-50 pb-24">
+          <div className="relative h-56 bg-gray-900 rounded-b-[2rem] shadow-md overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1541838634568-1afec5515259?auto=format&fit=crop&w=800&q=80" className="w-full h-full object-cover opacity-50" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-            <div className="absolute top-6 right-6">
-              <button onClick={handleLogout} className="bg-white/20 p-2.5 rounded-full hover:bg-red-500/80 backdrop-blur-md transition-colors text-white">
-                <LogOut className="w-5 h-5" />
+            <div className="absolute top-4 right-4">
+              <button onClick={handleLogout} className="bg-white/20 p-2 rounded-full text-white">
+                <LogOut className="w-4 h-4" />
               </button>
             </div>
-            <div className="absolute bottom-6 left-6 right-6">
-              <h1 className="text-3xl font-extrabold text-white mb-1">Halo, {currentUser.realName || currentUser.name}!</h1>
-              <p className="text-gray-300 text-sm font-medium">Jadwal ini dirancang khusus untukmu.</p>
-              <div className="flex flex-wrap gap-2 mt-4">
+            <div className="absolute bottom-5 left-5 right-5">
+              <h1 className="text-2xl font-extrabold text-white mb-1">Halo, {currentUser.realName || currentUser.name}!</h1>
+              <p className="text-gray-300 text-xs font-medium">Jadwal personal Kamu.</p>
+              <div className="flex flex-wrap gap-1.5 mt-3">
                 {currentUser.interests.map((tag, i) => (
-                  <span key={i} className="bg-white/20 backdrop-blur-md border border-white/30 text-white text-xs px-3 py-1 rounded-full font-bold shadow-sm">
+                  <span key={i} className="bg-white/20 text-white text-[10px] px-2.5 py-1 rounded-md font-bold border border-white/30">
                     {formatTag(tag)}
                   </span>
                 ))}
@@ -992,24 +1009,24 @@
             </div>
           </div>
 
-          <div className="max-w-md mx-auto px-5 mt-6">
+          <div className="max-w-md mx-auto px-4 mt-5">
             <WeatherWidget />
             <TripSummary />
 
-            <div className="space-y-10">
+            <div className="space-y-8">
               {ITINERARY.map((day, idx) => (
                 <div key={idx} className="relative">
-                  <div className="sticky top-4 z-20 bg-white/80 backdrop-blur-lg border border-gray-200 py-3 px-5 rounded-2xl shadow-sm mb-6 flex justify-between items-center">
+                  <div className="sticky top-2 z-20 bg-white/90 backdrop-blur-md border border-gray-200 py-3 px-4 rounded-2xl shadow-sm mb-4 flex justify-between items-center">
                     <div>
-                      <h2 className="text-xl font-extrabold text-gray-900">{day.title}</h2>
-                      <p className="text-blue-600 font-bold text-xs uppercase tracking-widest">{day.date}</p>
+                      <h2 className="text-base font-extrabold text-gray-900">{day.title}</h2>
+                      <p className="text-blue-600 font-bold text-[10px] uppercase">{day.date}</p>
                     </div>
-                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-500">
+                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-500 text-xs">
                       {day.day}
                     </div>
                   </div>
                   
-                  <div className="ml-2">
+                  <div className="ml-1">
                     {day.activities.map((act, i) => {
                       const match = isRecommended(act.tags, currentUser.interests);
                       return <ActivityCard key={i} act={act} match={match} />;
