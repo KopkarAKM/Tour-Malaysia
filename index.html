@@ -8,8 +8,6 @@
   <style>
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    
-    /* Mencegah highlight biru saat elemen disentuh di ponsel */
     * { -webkit-tap-highlight-color: transparent; }
   </style>
   <script type="importmap">
@@ -34,14 +32,28 @@
     import { createRoot } from 'react-dom/client';
     import { MapPin, Camera, ShoppingBag, Utensils, Clock, Users, CheckCircle, AlertTriangle, LogOut, ChevronRight, Info, Trash2, RefreshCw, Sun, CloudRain, CheckSquare, Compass, ExternalLink } from 'lucide-react';
     import { initializeApp } from 'firebase/app';
-    import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+    import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
     import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    // MASUKKAN KONFIGURASI FIREBASE KAMU DI BAWAH INI UNTUK MENYIMPAN DATA MULTI-USER
+    // Buat project di console.firebase.google.com, pilih Web App, dan salin config-nya ke sini.
+    const myFirebaseConfig = {
+      // apiKey: "API_KEY_KAMU",
+      // authDomain: "DOMAIN_KAMU.firebaseapp.com",
+      // projectId: "ID_PROYEK_KAMU",
+      // storageBucket: "BUCKET_KAMU.appspot.com",
+      // messagingSenderId: "SENDER_ID",
+      // appId: "APP_ID"
+    };
+
+    const isFirebaseActive = Object.keys(myFirebaseConfig).length > 0;
+    let app, auth, db;
+
+    if (isFirebaseActive) {
+      app = initializeApp(myFirebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+    }
 
     const QUESTIONS = [
       {
@@ -183,7 +195,7 @@
             tags: ['kuliner', 'kuliner_hemat'],
             location: 'Batu Caves',
             thumbnail: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80',
-            insight: 'Pilih paket nasi Mamak dengan harga wajar RM 10 - RM 15.',
+            insight: 'Pilih paket nasi Mamak dengan harga wajar RM 10 hingga RM 15.',
             todo: ['Makan paket nasi briyani', 'Pulihkan energi fisik']
           },
           { 
@@ -215,7 +227,7 @@
             location: 'Seeds Hotel Bukit Bintang',
             thumbnail: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=800&q=80',
             insight: 'Pesan makanan lewat aplikasi untuk memaksimalkan istirahat.',
-            todo: ['Makan malam', 'Cek stok memori HP/kamera']
+            todo: ['Makan malam', 'Cek stok memori HP kamera']
           }
         ]
       },
@@ -252,7 +264,7 @@
             tags: ['kuliner', 'kuliner_hemat'],
             location: 'Jonker Street',
             thumbnail: 'https://images.unsplash.com/photo-1626804475297-41607ea0af49?auto=format&fit=crop&w=800&q=80',
-            insight: 'Makan di Kocik Kitchen (Nyonya Halal) atau Asam Pedas Claypot.',
+            insight: 'Makan di Kocik Kitchen Nyonya Halal atau Asam Pedas Claypot.',
             todo: ['Coba Chicken Pongteh', 'Makan Asam Pedas Melaka']
           },
           { 
@@ -268,7 +280,7 @@
           { 
             id: 'd3_a5',
             time: '16:00', 
-            desc: 'Masjid Selat Melaka (Senja).', 
+            desc: 'Masjid Selat Melaka.', 
             tags: ['foto', 'foto_alam'],
             location: 'Melaka Straits Mosque',
             thumbnail: 'https://images.unsplash.com/photo-1572074360982-f326c26804d9?auto=format&fit=crop&w=800&q=80',
@@ -300,7 +312,7 @@
             tags: ['foto', 'foto_budaya'],
             location: 'Dataran Merdeka',
             thumbnail: 'https://images.unsplash.com/photo-1601058269781-80cb33dc783e?auto=format&fit=crop&w=800&q=80',
-            insight: 'Alun-alun berumput dengan arsitektur hibrida Moorish-Mughal.',
+            insight: 'Alun-alun berumput dengan arsitektur hibrida Moorish Mughal.',
             todo: ['Foto di Gedung Sultan Abdul Samad', 'Lihat tiang bendera tertinggi']
           },
           { 
@@ -310,7 +322,7 @@
             tags: ['foto', 'foto_alam', 'foto_modern'],
             location: 'Putra Mosque',
             thumbnail: 'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=800&q=80',
-            insight: 'Fokus bidikan di Astaka Morocco (estetika Marrakech) dan Masjid Putra.',
+            insight: 'Fokus bidikan di Astaka Morocco estetika Marrakech dan Masjid Putra.',
             todo: ['Foto di Astaka Morocco', 'Foto estetis Masjid Putra']
           },
           { 
@@ -321,7 +333,7 @@
             location: 'Ayer@8 Putrajaya',
             thumbnail: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80',
             insight: 'Makan komunal porsi besar dengan pemandangan danau.',
-            todo: ['Makan Nasi Arab/Mandi Lamb', 'Nikmati lanskap danau']
+            todo: ['Makan Nasi Arab', 'Nikmati lanskap danau']
           },
           { 
             id: 'd4_a4',
@@ -417,22 +429,20 @@
       const [tempProfile, setTempProfile] = useState({ name: '', diet: '', needs: '' });
       const [loginName, setLoginName] = useState('');
       const [modalConfig, setModalConfig] = useState({ isOpen: false, type: '', user: null });
-      
       const [showAdminModal, setShowAdminModal] = useState(false);
       const [adminPassword, setAdminPassword] = useState('');
       const [adminError, setAdminError] = useState('');
       const [profileError, setProfileError] = useState('');
+      const [isDemoMode, setIsDemoMode] = useState(!isFirebaseActive);
 
       useEffect(() => {
+        if (!isFirebaseActive) return;
         const initAuth = async () => {
           try {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-              await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-              await signInAnonymously(auth);
-            }
+            await signInAnonymously(auth);
           } catch (error) {
             console.error("Auth Error:", error);
+            setIsDemoMode(true);
           }
         };
         initAuth();
@@ -441,8 +451,9 @@
       }, []);
 
       useEffect(() => {
-        if (!authUser) return;
-        const participantsRef = collection(db, 'artifacts', appId, 'public', 'data', 'participants');
+        if (!isFirebaseActive || !authUser) return;
+        
+        const participantsRef = collection(db, 'trip_planner_data');
         const unsubscribe = onSnapshot(participantsRef, (snapshot) => {
           const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           setParticipants(data);
@@ -478,9 +489,11 @@
             checkedTasks: []
           };
           
-          if (authUser) {
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', newId);
+          if (isFirebaseActive && authUser) {
+            const docRef = doc(db, 'trip_planner_data', newId);
             await setDoc(docRef, user);
+          } else {
+            setParticipants(prev => [...prev, user]);
           }
         } else {
           if(!user.checkedTasks) user.checkedTasks = [];
@@ -527,9 +540,11 @@
         setCurrentUser(updatedUser);
         setSurveyStep(1); 
 
-        if (authUser) {
-          const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', currentUser.id);
+        if (isFirebaseActive && authUser) {
+          const docRef = doc(db, 'trip_planner_data', currentUser.id);
           await setDoc(docRef, updatedUser, { merge: true });
+        } else {
+          setParticipants(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
         }
       };
 
@@ -560,14 +575,16 @@
 
         setCurrentUser(finalUserData);
 
-        if (authUser) {
-          const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', currentUser.id);
+        if (isFirebaseActive && authUser) {
+          const docRef = doc(db, 'trip_planner_data', currentUser.id);
           await setDoc(docRef, finalUserData, { merge: true });
+        } else {
+          setParticipants(prev => prev.map(u => u.id === currentUser.id ? finalUserData : u));
         }
       };
 
       const toggleTask = async (taskId) => {
-        if (currentUser.role === 'admin' || !authUser) return;
+        if (currentUser.role === 'admin') return;
 
         const currentTasks = currentUser.checkedTasks || [];
         const isChecked = currentTasks.includes(taskId);
@@ -582,8 +599,12 @@
         const updatedUser = { ...currentUser, checkedTasks: newTasks };
         setCurrentUser(updatedUser);
 
-        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', currentUser.id);
-        await updateDoc(docRef, { checkedTasks: newTasks });
+        if (isFirebaseActive && authUser) {
+          const docRef = doc(db, 'trip_planner_data', currentUser.id);
+          await updateDoc(docRef, { checkedTasks: newTasks });
+        } else {
+           setParticipants(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
+        }
       };
 
       const isRecommended = (activityTags, userInterests) => {
@@ -593,17 +614,25 @@
       };
 
       const executeAction = async () => {
-        if (!authUser || !modalConfig.user) return;
-        const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', modalConfig.user.id);
-        try {
-          if (modalConfig.type === 'delete') {
+        if (!modalConfig.user) return;
+        
+        if (modalConfig.type === 'delete') {
+          if (isFirebaseActive && authUser) {
+            const userRef = doc(db, 'trip_planner_data', modalConfig.user.id);
             await deleteDoc(userRef);
-          } else if (modalConfig.type === 'reset') {
-            await updateDoc(userRef, { hasCompletedSurvey: false, interests: [], diet: '', needs: '', checkedTasks: [] });
+          } else {
+            setParticipants(prev => prev.filter(u => u.id !== modalConfig.user.id));
           }
-        } catch (error) {
-          console.error("Action error:", error);
+        } else if (modalConfig.type === 'reset') {
+           const resetData = { hasCompletedSurvey: false, interests: [], diet: '', needs: '', checkedTasks: [] };
+           if (isFirebaseActive && authUser) {
+              const userRef = doc(db, 'trip_planner_data', modalConfig.user.id);
+              await updateDoc(userRef, resetData);
+           } else {
+              setParticipants(prev => prev.map(u => u.id === modalConfig.user.id ? {...u, ...resetData} : u));
+           }
         }
+        
         setModalConfig({ isOpen: false, type: '', user: null });
       };
 
@@ -653,7 +682,6 @@
                   </div>
                 )}
 
-                {/* Tombol Peta Pintar pengganti Iframe untuk Mobile */}
                 {act.location && (
                   <a 
                     href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(act.location)}`} 
@@ -730,12 +758,16 @@
         </div>
       );
 
-      // Layar Login
       if (!currentUser) {
         return (
           <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-900 relative">
             <img src="https://images.unsplash.com/photo-1541838634568-1afec5515259?auto=format&fit=crop&w=800&q=80" className="absolute inset-0 w-full h-full object-cover opacity-40" />
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm text-center relative z-10">
+              {isDemoMode && (
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md whitespace-nowrap">
+                  Mode Uji Coba Offline
+                </div>
+              )}
               <div className="bg-blue-600 w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
                 <MapPin className="text-white w-7 h-7" />
               </div>
@@ -786,7 +818,6 @@
         );
       }
 
-      // Layar Form Profil & Survei
       if (currentUser.role === 'user' && !currentUser.hasCompletedSurvey) {
         if (surveyStep === 0) {
           return (
@@ -854,7 +885,6 @@
         );
       }
 
-      // Layar Admin
       if (currentUser.role === 'admin') {
         return (
           <div className="min-h-screen bg-gray-50 pb-20">
@@ -865,10 +895,17 @@
                   <LogOut className="w-4 h-4" />
                 </button>
               </div>
-              <p className="opacity-90 text-xs font-medium">Pantau 9 peserta secara live.</p>
+              <p className="opacity-90 text-xs font-medium">Pantau peserta di sini.</p>
             </div>
 
             <div className="max-w-4xl mx-auto px-4 mt-6">
+              {isDemoMode && (
+                <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 rounded-r-xl mb-6 shadow-sm">
+                  <h3 className="font-bold text-yellow-800 text-sm mb-1">Mode Uji Coba</h3>
+                  <p className="text-xs text-yellow-700">Aplikasi belum terhubung ke Firebase. Data hanya tersimpan sementara di perangkat ini.</p>
+                </div>
+              )}
+
               <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-r-xl mb-6 shadow-sm">
                 <h3 className="font-bold text-orange-800 flex items-center mb-1 text-sm">
                   <AlertTriangle className="w-4 h-4 mr-2" /> Pengingat Logistik
@@ -883,7 +920,6 @@
                 <Users className="w-5 h-5 mr-2 text-blue-600" /> Monitor Pasukan
               </h2>
 
-              {/* Tampilan Mobile Kartu untuk Tabel Admin */}
               <div className="md:hidden space-y-4 mb-8">
                 {participants.filter(u => u.role !== 'admin').map(user => (
                   <div key={user.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
@@ -907,9 +943,11 @@
                     </div>
                   </div>
                 ))}
+                {participants.filter(u => u.role !== 'admin').length === 0 && (
+                  <p className="text-center text-sm text-gray-400 font-bold py-4">Belum ada peserta yang masuk.</p>
+                )}
               </div>
 
-              {/* Tampilan Desktop Tabel */}
               <div className="hidden md:block bg-white rounded-2xl shadow-sm mb-10 overflow-hidden border border-gray-100">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm whitespace-nowrap">
@@ -985,7 +1023,6 @@
         );
       }
 
-      // Layar Utama Peserta
       return (
         <div className="min-h-screen bg-gray-50 pb-24">
           <div className="relative h-56 bg-gray-900 rounded-b-[2rem] shadow-md overflow-hidden">
