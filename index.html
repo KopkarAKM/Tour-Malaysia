@@ -9,6 +9,7 @@
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     * { -webkit-tap-highlight-color: transparent; }
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
   </style>
   <script type="importmap">
     {
@@ -30,7 +31,7 @@
   <script type="text/babel" data-type="module">
     import React, { useState, useEffect } from 'react';
     import { createRoot } from 'react-dom/client';
-    import { MapPin, Camera, ShoppingBag, Utensils, Clock, Users, CheckCircle, AlertTriangle, LogOut, ChevronRight, Info, Trash2, RefreshCw, Sun, CloudRain, CheckSquare, Compass, ExternalLink } from 'lucide-react';
+    import { MapPin, Clock, Users, CheckCircle, AlertTriangle, LogOut, ChevronRight, Info, Trash2, RefreshCw, Sun, CloudRain, CheckSquare, Compass, ExternalLink, Calendar, Map as MapIcon, User } from 'lucide-react';
     import { initializeApp } from 'firebase/app';
     import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
     import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
@@ -110,12 +111,70 @@
       }
     ];
 
+    // Data rekomendasi personal berbasis minat per lokasi
+    const PERSONALIZED_INSIGHTS = {
+      'd1_a2': { // Petronas
+        'foto': 'Ambil foto low-angle dari kolam Lake Symphony atau dari Jembatan Saloma Link saat lampu menyala.',
+        'kuliner': 'Area KLCC punya banyak kafe dan restoran. Cocok untuk ngopi sore sambil menunggu senja.',
+        'belanja_branded': 'Suria KLCC tepat di bawah menara ini. Surga belanja barang bermerek.',
+        'santai': 'Duduk santai di taman KLCC sambil melihat air mancur menari menjelang malam.'
+      },
+      'd1_a4': { // Bukit Bintang
+        'foto': 'Persimpangan jalan dengan lampu neon besar adalah spot foto urban terbaik ala Tokyo/New York.',
+        'kuliner': 'Banyak jajanan street food berjejer. Jangan lupa coba es krim atau minuman viral.',
+        'belanja_branded': 'Kawasan ini dipenuhi mall premium seperti Pavilion dan Lot 10. Siapkan waktu eksplorasi.',
+        'belanja_murah': 'Sungei Wang Plaza punya banyak pilihan pakaian dengan harga lebih terjangkau.',
+        'santai': 'Nikmati pertunjukan musisi jalanan (busker) yang sering tampil di depan Lot 10.'
+      },
+      'd2_a1': { // Batu Caves
+        'foto': 'Tangga warna-warni sangat fotogenik. Tangkap momen burung merpati beterbangan di pelataran.',
+        'kuliner': 'Coba teh tarik asli dan roti canai di kedai Mamak dekat pintu masuk.',
+        'santai': 'Fokus pada arsitektur luar jika tidak ingin terlalu lelah menaiki ratusan anak tangga.'
+      },
+      'd2_a4': { // Petaling Street
+        'foto': 'Kwai Chai Hong menawarkan mural hiper-realis awal abad 20. Siapkan kamera untuk dinding berlukis.',
+        'kuliner': 'Banyak kopi tradisional (Kopitiam) dan camilan lokal yang patut dicoba.',
+        'belanja_murah': 'Tempat terbaik menawar suvenir, kaos, dan tas. Jangan ragu menawar hingga setengah harga.',
+        'oleh_oleh': 'Magnet kulkas dan gantungan kunci dijual murah dalam jumlah banyak di sini.'
+      },
+      'd3_a2': { // Stadthuys Melaka
+        'foto': 'Dinding bata merah terakota menyajikan kontras brilian dengan langit biru. Spot klasik Melaka.',
+        'santai': 'Banyak becak hias unik (dengan musik) yang bisa disewa untuk keliling santai.'
+      },
+      'd3_a3': { // Makan Siang Melaka
+        'kuliner': 'Wajib coba Asam Pedas Claypot atau Nyonya Laksa. Kocik Kitchen sangat direkomendasikan.',
+        'kuliner_hemat': 'Banyak warung di sekitar Jonker yang menawarkan Nasi Ayam Hainan halal porsi kenyang.',
+        'foto': 'Interior rumah makan Peranakan (Nyonya) biasanya memiliki dekorasi antik yang unik.'
+      },
+      'd3_a4': { // Jonker Walk
+        'belanja_murah': 'Jalan poros budaya ini penuh toko pakaian lokal dan aksesoris unik buatan tangan.',
+        'oleh_oleh': 'Pusatnya pernak-pernik klasik, makanan kering, dan kerajinan tangan Melaka.',
+        'foto_budaya': 'Bangunan bersejarah sepanjang jalan sangat khas arsitektur Baba Nyonya.',
+        'kuliner': 'Jangan lewatkan cendol Melaka atau jajanan ringan pinggir jalan.'
+      },
+      'd3_a5': { // Masjid Selat
+        'foto': 'Tiba jam 16:30 agar air pasang menyentuh dasar masjid, menciptakan efek melayang. Spot senja terbaik.',
+        'foto_alam': 'Bidikan siluet masjid berlatar belakang matahari terbenam di laut lepas sangat direkomendasikan.',
+        'santai': 'Duduk di pinggir laut menikmati angin sore sambil menunggu waktu magrib.'
+      },
+      'd4_a2': { // Putrajaya
+        'foto': 'Astaka Morocco memberikan ilusi foto ala Timur Tengah. Masjid Putra berbahan granit mawar sangat cantik.',
+        'foto_alam': 'Danau buatan Putrajaya sangat luas dan bersih, cocok untuk foto pemandangan.',
+        'santai': 'Kawasan ini sangat tertata dan sepi, enak untuk berjalan santai menikmati arsitektur besar.'
+      },
+      'd4_a4': { // Pavilion / Suria KLCC
+        'belanja_branded': 'Incar toko-toko flagship merek internasional. Sering ada diskon khusus.',
+        'kuliner': 'Kunjungi Bacha Coffee untuk kopi premium atau 13DE Marzo Cafe untuk minuman beruang viral.',
+        'foto_modern': 'Interior mall sangat mewah dan estetik, terutama di area pameran tengah (Centre Court).'
+      }
+    };
+
     const ITINERARY = [
       {
         day: 1,
         date: '30 April',
         title: 'Sinkronisasi Logistik & Estetika',
-        image: 'https://image.pollinations.ai/prompt/Kuala%20Lumpur%20skyline%20sunset?width=800&height=600&nologo=true',
+        image: 'https://images.unsplash.com/photo-1541838634568-1afec5515259?auto=format&fit=crop&w=800&q=80',
         activities: [
           { 
             id: 'd1_a1',
@@ -123,18 +182,16 @@
             desc: 'Landing di KLIA. Penjemputan dengan Hiace.', 
             tags: ['santai'],
             location: 'Kuala Lumpur International Airport',
-            thumbnail: 'https://image.pollinations.ai/prompt/Kuala%20Lumpur%20International%20Airport%20architecture?width=800&height=600&nologo=true',
-            insight: 'Persiapkan dokumen MDAC yang sudah diisi online. Kita gunakan Hiace pribadi agar tidak repot menyeret koper.',
+            thumbnail: 'https://images.unsplash.com/photo-1569154941061-e231b4725ef1?auto=format&fit=crop&w=800&q=80',
             todo: ['Lolos imigrasi autogate', 'Kumpul di titik temu', 'Masuk Hiace menuju hotel']
           },
           { 
             id: 'd1_a2',
             time: '14:30', 
             desc: 'Petronas Twin Tower & KL Tower.', 
-            tags: ['foto', 'foto_modern'],
+            tags: ['foto', 'foto_modern', 'belanja_branded'],
             location: 'Petronas Twin Towers',
-            thumbnail: 'https://image.pollinations.ai/prompt/Petronas%20Twin%20Towers%20Kuala%20Lumpur%20sunny%20day?width=800&height=600&nologo=true',
-            insight: 'Ambil foto dari Taman KLCC dekat kolam Lake Symphony atau dari Jembatan Saloma Link untuk estetika maksimal.',
+            thumbnail: 'https://images.unsplash.com/photo-1584646098378-0874589d76b1?auto=format&fit=crop&w=800&q=80',
             todo: ['Foto berlatar air mancur Lake Symphony', 'Foto low-angle di Jembatan Saloma Link', 'Foto urban di persimpangan Yap Kwan Seng']
           },
           { 
@@ -143,29 +200,26 @@
             desc: 'Check-in Seeds Hotel Bukit Bintang.', 
             tags: ['santai'],
             location: 'Seeds Hotel Bukit Bintang',
-            thumbnail: 'https://image.pollinations.ai/prompt/Cozy%20modern%20hotel%20room%20interior?width=800&height=600&nologo=true',
-            insight: 'Lokasi hotel sangat dekat pusat komersial dan Jalan Alor untuk efisiensi mobilitas.',
+            thumbnail: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=800&q=80',
             todo: ['Terima kunci kamar', 'Mandi dan bersih-bersih', 'Isi ulang daya ponsel']
           },
           { 
             id: 'd1_a4',
             time: '18:00', 
             desc: 'Bukit Bintang Walkway.', 
-            tags: ['belanja_branded', 'foto_modern'],
+            tags: ['belanja_branded', 'belanja_murah', 'foto_modern', 'kuliner'],
             location: 'Pavilion Kuala Lumpur',
-            thumbnail: 'https://image.pollinations.ai/prompt/Bukit%20Bintang%20Kuala%20Lumpur%20night%20neon%20lights%20street?width=800&height=600&nologo=true',
-            insight: 'Nikmati suasana musisi jalanan yang berbaur dengan butik internasional di bawah lampu neon.',
+            thumbnail: 'https://images.unsplash.com/photo-1596422846543-74c6e25501f4?auto=format&fit=crop&w=800&q=80',
             todo: ['Jalan santai di trotoar Bukit Bintang', 'Lihat pertunjukan pengamen', 'Foto persimpangan ikonik']
           },
           { 
             id: 'd1_a5',
             time: '19:30', 
             desc: 'Makan malam via GrabFood.', 
-            tags: ['kuliner'], 
+            tags: ['kuliner', 'kuliner_hemat'], 
             info: 'Makan di kamar lebih hemat energi.',
             location: 'Jalan Alor',
-            thumbnail: 'https://image.pollinations.ai/prompt/Delicious%20Malaysian%20street%20food%20Nasi%20Lemak?width=800&height=600&nologo=true',
-            insight: 'Pesan GrabFood ke hotel menghemat energi fisik dan mencegah harga mahal di restoran jalanan.',
+            thumbnail: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80',
             todo: ['Pilih menu halal di aplikasi', 'Makan malam bersama di kamar', 'Istirahat']
           }
         ]
@@ -174,16 +228,15 @@
         day: 2,
         date: '1 Mei',
         title: 'Spiritual & Warisan Visual',
-        image: 'https://image.pollinations.ai/prompt/Batu%20Caves%20stairs%20wide%20shot?width=800&height=600&nologo=true',
+        image: 'https://images.unsplash.com/photo-1518342880790-252f483d3e8e?auto=format&fit=crop&w=800&q=80',
         activities: [
           { 
             id: 'd2_a1',
             time: '08:30', 
             desc: 'Eksplorasi Batu Caves.', 
-            tags: ['foto', 'foto_budaya'],
+            tags: ['foto', 'foto_budaya', 'santai'],
             location: 'Batu Caves',
-            thumbnail: 'https://image.pollinations.ai/prompt/Batu%20Caves%20Malaysia%20golden%20statue%20and%20colorful%20stairs?width=800&height=600&nologo=true',
-            insight: 'Datang pagi untuk hindari panas dan massa turis padat.',
+            thumbnail: 'https://images.unsplash.com/photo-1518342880790-252f483d3e8e?auto=format&fit=crop&w=800&q=80',
             todo: ['Foto dengan patung emas Dewa Murugan', 'Daki 272 anak tangga pelangi', 'Waspada kera liar']
           },
           { 
@@ -192,39 +245,35 @@
             desc: 'Makan Siang Halal Area Batu Caves.', 
             tags: ['kuliner', 'kuliner_hemat'],
             location: 'Batu Caves',
-            thumbnail: 'https://image.pollinations.ai/prompt/Nasi%20Briyani%20delicious%20food?width=800&height=600&nologo=true',
-            insight: 'Pilih paket nasi Mamak dengan harga wajar RM 10 - RM 15.',
+            thumbnail: 'https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?auto=format&fit=crop&w=800&q=80',
             todo: ['Makan paket nasi briyani', 'Pulihkan energi fisik']
           },
           { 
             id: 'd2_a3',
             time: '13:30', 
             desc: 'Kunjungan Chocolate Boutique.', 
-            tags: ['oleh_oleh', 'belanja_murah'],
+            tags: ['oleh_oleh', 'belanja_murah', 'kuliner'],
             location: 'Beryl\'s Chocolate Kingdom',
-            thumbnail: 'https://image.pollinations.ai/prompt/Luxury%20chocolate%20boutique%20display?width=800&height=600&nologo=true',
-            insight: 'Sentra inovasi cokelat lokal Malaysia.',
+            thumbnail: 'https://images.unsplash.com/photo-1548907040-4baa42d10919?auto=format&fit=crop&w=800&q=80',
             todo: ['Cicipi sampel cokelat', 'Beli cokelat tiramisu']
           },
           { 
             id: 'd2_a4',
             time: '15:30', 
             desc: 'Kwai Chai Hong & Petaling Street.', 
-            tags: ['belanja_murah', 'foto_budaya'], 
+            tags: ['belanja_murah', 'foto_budaya', 'oleh_oleh'], 
             info: 'Siapkan kamera untuk dinding mural.',
             location: 'Kwai Chai Hong',
-            thumbnail: 'https://image.pollinations.ai/prompt/Kwai%20Chai%20Hong%20Kuala%20Lumpur%20lanterns%20street?width=800&height=600&nologo=true',
-            insight: 'Kwai Chai Hong adalah gang mural hiper-realis awal abad 20. Tangkap cahaya lampion saat senja.',
+            thumbnail: 'https://images.unsplash.com/photo-1555940280-4566c75dfa36?auto=format&fit=crop&w=800&q=80',
             todo: ['Berfoto di mural interaktif', 'Tangkap momen lampion senja', 'Belanja suvenir']
           },
           { 
             id: 'd2_a5',
             time: '19:00', 
             desc: 'Kembali ke Hotel & GrabFood.', 
-            tags: ['santai'],
+            tags: ['santai', 'kuliner'],
             location: 'Seeds Hotel Bukit Bintang',
-            thumbnail: 'https://image.pollinations.ai/prompt/Kuala%20Lumpur%20cityscape%20night%20view?width=800&height=600&nologo=true',
-            insight: 'Pesan makanan lewat aplikasi untuk memaksimalkan istirahat.',
+            thumbnail: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=800&q=80',
             todo: ['Makan malam', 'Cek stok memori HP kamera']
           }
         ]
@@ -233,7 +282,7 @@
         day: 3,
         date: '2 Mei',
         title: 'Bandaraya Bersejarah Melaka',
-        image: 'https://image.pollinations.ai/prompt/Melaka%20river%20historic%20city?width=800&height=600&nologo=true',
+        image: 'https://images.unsplash.com/photo-1582218059049-36eb8b15d918?auto=format&fit=crop&w=800&q=80',
         activities: [
           { 
             id: 'd3_a1',
@@ -241,18 +290,16 @@
             desc: 'Logistik Trans-Urban KL-Melaka.', 
             tags: ['santai'],
             location: 'Melaka',
-            thumbnail: 'https://image.pollinations.ai/prompt/Modern%20tourist%20van%20driving%20on%20highway?width=800&height=600&nologo=true',
-            insight: 'Tidur nyenyak selama perjalanan tol 2 jam menggunakan Hiace.',
+            thumbnail: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=800&q=80',
             todo: ['Istirahat di mobil']
           },
           { 
             id: 'd3_a2',
             time: '10:30', 
             desc: 'Bangunan Merah Stadthuys.', 
-            tags: ['foto', 'foto_budaya'],
+            tags: ['foto', 'foto_budaya', 'santai'],
             location: 'Stadthuys Melaka',
-            thumbnail: 'https://image.pollinations.ai/prompt/Stadthuys%20Melaka%20red%20building%20historic?width=800&height=600&nologo=true',
-            insight: 'Dinding bata merah terakota menyajikan kontras brilian dengan langit biru.',
+            thumbnail: 'https://images.unsplash.com/photo-1582218059049-36eb8b15d918?auto=format&fit=crop&w=800&q=80',
             todo: ['Foto gedung Stadthuys', 'Naik becak hias Melaka']
           },
           { 
@@ -261,38 +308,34 @@
             desc: 'Makan Siang Halal Melaka.', 
             tags: ['kuliner', 'kuliner_hemat'],
             location: 'Jonker Street',
-            thumbnail: 'https://image.pollinations.ai/prompt/Asam%20Pedas%20Melaka%20delicious%20food?width=800&height=600&nologo=true',
-            insight: 'Makan di Kocik Kitchen Nyonya Halal atau Asam Pedas Claypot.',
+            thumbnail: 'https://images.unsplash.com/photo-1626804475297-41607ea0af49?auto=format&fit=crop&w=800&q=80',
             todo: ['Coba Chicken Pongteh', 'Makan Asam Pedas Melaka']
           },
           { 
             id: 'd3_a4',
             time: '13:30', 
             desc: 'Menelusuri Jonker Walk.', 
-            tags: ['belanja_murah', 'oleh_oleh', 'foto_budaya'],
+            tags: ['belanja_murah', 'oleh_oleh', 'foto_budaya', 'kuliner'],
             location: 'Jonker Walk Melaka',
-            thumbnail: 'https://image.pollinations.ai/prompt/Jonker%20Walk%20Melaka%20street%20market?width=800&height=600&nologo=true',
-            insight: 'Pusat budaya Peranakan. Ideal untuk barang antik dan suvenir.',
+            thumbnail: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=800&q=80',
             todo: ['Susuri toko lama', 'Beli pernak-pernik']
           },
           { 
             id: 'd3_a5',
             time: '16:00', 
             desc: 'Masjid Selat Melaka.', 
-            tags: ['foto', 'foto_alam'],
+            tags: ['foto', 'foto_alam', 'santai'],
             location: 'Melaka Straits Mosque',
-            thumbnail: 'https://image.pollinations.ai/prompt/Malacca%20Straits%20Mosque%20sunset%20floating?width=800&height=600&nologo=true',
-            insight: 'Tiba saat air pasang menciptakan efek masjid melayang. Sempurna untuk golden hour.',
+            thumbnail: 'https://images.unsplash.com/photo-1572074360982-f326c26804d9?auto=format&fit=crop&w=800&q=80',
             todo: ['Foto siluet masjid', 'Salat di area masjid']
           },
           { 
             id: 'd3_a6',
             time: '18:00', 
             desc: 'Perjalanan kembali ke KL.', 
-            tags: ['santai'],
+            tags: ['santai', 'kuliner'],
             location: 'Kuala Lumpur',
-            thumbnail: 'https://image.pollinations.ai/prompt/Highway%20night%20drive%20long%20exposure?width=800&height=600&nologo=true',
-            insight: 'Kumpulkan pesanan GrabFood di mobil agar makanan siap di hotel.',
+            thumbnail: 'https://images.unsplash.com/photo-1494515843206-f3117d3f51b7?auto=format&fit=crop&w=800&q=80',
             todo: ['Pesan GrabFood', 'Tidur di perjalanan']
           }
         ]
@@ -301,7 +344,7 @@
         day: 4,
         date: '3 Mei',
         title: 'Geometri & Belanja Viral',
-        image: 'https://image.pollinations.ai/prompt/Putrajaya%20bridge%20and%20mosque?width=800&height=600&nologo=true',
+        image: 'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=800&q=80',
         activities: [
           { 
             id: 'd4_a1',
@@ -309,49 +352,44 @@
             desc: 'Dataran Merdeka Square.', 
             tags: ['foto', 'foto_budaya'],
             location: 'Dataran Merdeka',
-            thumbnail: 'https://image.pollinations.ai/prompt/Dataran%20Merdeka%20Kuala%20Lumpur%20historic%20building?width=800&height=600&nologo=true',
-            insight: 'Alun-alun berumput dengan arsitektur hibrida Moorish Mughal.',
+            thumbnail: 'https://images.unsplash.com/photo-1601058269781-80cb33dc783e?auto=format&fit=crop&w=800&q=80',
             todo: ['Foto di Gedung Sultan Abdul Samad', 'Lihat tiang bendera tertinggi']
           },
           { 
             id: 'd4_a2',
             time: '11:00', 
             desc: 'Eksplorasi Putrajaya.', 
-            tags: ['foto', 'foto_alam', 'foto_modern'],
+            tags: ['foto', 'foto_alam', 'foto_modern', 'santai'],
             location: 'Putra Mosque',
-            thumbnail: 'https://image.pollinations.ai/prompt/Putra%20Mosque%20Putrajaya%20pink%20dome%20lake?width=800&height=600&nologo=true',
-            insight: 'Fokus bidikan di Astaka Morocco estetika Marrakech dan Masjid Putra.',
+            thumbnail: 'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=800&q=80',
             todo: ['Foto di Astaka Morocco', 'Foto estetis Masjid Putra']
           },
           { 
             id: 'd4_a3',
             time: '13:00', 
             desc: 'Makan Siang Tepi Danau Putrajaya.', 
-            tags: ['kuliner_hemat', 'kuliner'],
+            tags: ['kuliner_hemat', 'kuliner', 'foto_alam'],
             location: 'Ayer@8 Putrajaya',
-            thumbnail: 'https://image.pollinations.ai/prompt/Nasi%20Arab%20Mandi%20delicious%20food?width=800&height=600&nologo=true',
-            insight: 'Makan komunal porsi besar dengan pemandangan danau.',
+            thumbnail: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80',
             todo: ['Makan Nasi Arab', 'Nikmati lanskap danau']
           },
           { 
             id: 'd4_a4',
             time: '15:30', 
             desc: 'Suria KLCC & Pavilion Bukit Bintang.', 
-            tags: ['belanja_branded', 'foto_modern'], 
+            tags: ['belanja_branded', 'foto_modern', 'kuliner'], 
             info: 'Incar kedai kopi viral.',
             location: 'Pavilion Kuala Lumpur',
-            thumbnail: 'https://image.pollinations.ai/prompt/Suria%20KLCC%20luxury%20shopping%20mall%20interior?width=800&height=600&nologo=true',
-            insight: 'Pusat ritel viral. Kunjungi Bacha Coffee dan 13DE Marzo Cafe.',
+            thumbnail: 'https://images.unsplash.com/photo-1582650535185-5a7c2957b458?auto=format&fit=crop&w=800&q=80',
             todo: ['Beli kopi Bacha', 'Beli minuman beruang 13DE Marzo', 'Belanja barang mall']
           },
           { 
             id: 'd4_a5',
             time: '19:30', 
             desc: 'Persiapan Pulang & GrabFood.', 
-            tags: ['santai'],
+            tags: ['santai', 'kuliner'],
             location: 'Seeds Hotel Bukit Bintang',
-            thumbnail: 'https://image.pollinations.ai/prompt/Packing%20luggage%20in%20hotel%20room?width=800&height=600&nologo=true',
-            insight: 'Susun koper malam ini. Wajib tidur awal untuk ekstraksi subuh.',
+            thumbnail: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80',
             todo: ['Packing rapi', 'Makan malam terakhir']
           }
         ]
@@ -360,7 +398,7 @@
         day: 5,
         date: '4 Mei',
         title: 'Ekstraksi Subuh ke Bandara',
-        image: 'https://image.pollinations.ai/prompt/Airplane%20wing%20view%20sunrise?width=800&height=600&nologo=true',
+        image: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=800&q=80',
         activities: [
           { 
             id: 'd5_a1',
@@ -368,8 +406,7 @@
             desc: 'Bangun dan Check Out Total.', 
             tags: ['santai'],
             location: 'Seeds Hotel Bukit Bintang',
-            thumbnail: 'https://image.pollinations.ai/prompt/Hotel%20lobby%20reception%20modern?width=800&height=600&nologo=true',
-            insight: 'Transportasi publik belum buka. Hiace kita siaga penuh.',
+            thumbnail: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=800&q=80',
             todo: ['Cek dokumen', 'Kumpul lobi']
           },
           { 
@@ -379,18 +416,16 @@
             tags: ['santai'], 
             info: 'Wajib berangkat tepat 03:00.',
             location: 'KLIA2',
-            thumbnail: 'https://image.pollinations.ai/prompt/Driving%20to%20airport%20early%20morning?width=800&height=600&nologo=true',
-            insight: 'Jalan bebas hambatan lancar. Estimasi 45 menit perjalanan.',
+            thumbnail: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=800&q=80',
             todo: ['Tidur di Hiace']
           },
           { 
             id: 'd5_a3',
             time: '04:15', 
             desc: 'Proses KLIA2.', 
-            tags: ['santai'], 
+            tags: ['santai', 'belanja_murah', 'kuliner'], 
             location: 'KLIA2',
-            thumbnail: 'https://image.pollinations.ai/prompt/Airport%20terminal%20departure%20hall?width=800&height=600&nologo=true',
-            insight: 'Antrean drop bagasi AirAsia padat. Gerbang masuk jauh, manfaatkan waktu.',
+            thumbnail: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=800&q=80',
             todo: ['Drop bagasi', 'Lewati imigrasi']
           },
           { 
@@ -399,8 +434,7 @@
             desc: 'Penerbangan Kembali.', 
             tags: ['santai'],
             location: 'Kuala Lumpur International Airport',
-            thumbnail: 'https://image.pollinations.ai/prompt/Airplane%20flying%20in%20the%20sky%20sunrise?width=800&height=600&nologo=true',
-            insight: 'Misi sukses.',
+            thumbnail: 'https://images.unsplash.com/photo-1517400508447-f8dd518b86db?auto=format&fit=crop&w=800&q=80',
             todo: ['Istirahat penuh di pesawat']
           }
         ]
@@ -418,6 +452,29 @@
       return getTagEmoji(tag) + tag.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
     };
 
+    // Fungsi untuk mendapatkan rekomendasi khusus berdasarkan minat user
+    const getPersonalizedInsights = (actId, userInterests) => {
+      const insightsForAct = PERSONALIZED_INSIGHTS[actId];
+      if (!insightsForAct || !userInterests || userInterests.length === 0) return null;
+
+      let bestInsight = null;
+      // Coba cari info yang pas dengan minat pengguna
+      for (const interest of userInterests) {
+        if (insightsForAct[interest]) {
+           // Jika ada kecocokan spesifik (misal 'foto_budaya' cocok dengan 'foto' atau sebaliknya)
+           bestInsight = insightsForAct[interest];
+           break;
+        }
+        // Pencarian parsial (fallback)
+        const partialMatchKey = Object.keys(insightsForAct).find(k => interest.includes(k) || k.includes(interest));
+        if (partialMatchKey) {
+            bestInsight = insightsForAct[partialMatchKey];
+            break;
+        }
+      }
+      return bestInsight;
+    };
+
     function App() {
       const [participants, setParticipants] = useState([]);
       const [authUser, setAuthUser] = useState(null);
@@ -432,6 +489,9 @@
       const [adminError, setAdminError] = useState('');
       const [profileError, setProfileError] = useState('');
       const [isDemoMode, setIsDemoMode] = useState(!isFirebaseActive);
+      
+      const [activeTab, setActiveTab] = useState('jadwal');
+      const [selectedDay, setSelectedDay] = useState(null);
 
       useEffect(() => {
         if (!isFirebaseActive) return;
@@ -501,6 +561,8 @@
         setSurveyStep(0);
         setCurrentAnswers({});
         setTempProfile({ name: user.realName || '', diet: user.diet || '', needs: user.needs || '' });
+        setActiveTab('jadwal');
+        setSelectedDay(null);
       };
 
       const handleAdminSubmit = () => {
@@ -637,6 +699,9 @@
       const ActivityCard = ({ act, match }) => {
         const userTasks = currentUser?.checkedTasks || [];
         const allChecked = act.todo && act.todo.length > 0 && act.todo.every((_, idx) => userTasks.includes(`${act.id}_t${idx}`));
+        
+        // Ambil insight unik berdasarkan minat user
+        const personalizedInsight = getPersonalizedInsights(act.id, currentUser?.interests);
 
         return (
           <div className="relative pl-5 pb-6">
@@ -661,7 +726,7 @@
               <div className="p-4">
                 {match && (
                   <div className="mb-3">
-                    <span className="inline-block bg-blue-600 text-white text-[10px] px-2 py-1 rounded font-bold">Rekomendasi Untukmu</span>
+                    <span className="inline-block bg-blue-600 text-white text-[10px] px-2 py-1 rounded font-bold shadow-sm">Rekomendasi Untukmu</span>
                   </div>
                 )}
                 
@@ -673,10 +738,11 @@
                   ))}
                 </div>
 
-                {act.insight && (
+                {/* Tampilan Info yang Dipersonalisasi */}
+                {(personalizedInsight || act.insight) && (
                   <div className="mb-4 bg-blue-50 p-3 rounded-xl border border-blue-100 text-xs md:text-sm text-blue-900 shadow-sm">
-                    <Compass className="w-4 h-4 inline-block mr-2 mb-0.5 text-blue-600" />
-                    <span className="font-bold">Tips:</span> {act.insight}
+                    <Compass className="w-4 h-4 inline-block mr-1 mb-0.5 text-blue-600" />
+                    <span className="font-bold">Info Spesial:</span> {personalizedInsight || act.insight}
                   </div>
                 )}
 
@@ -685,7 +751,7 @@
                     href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(act.location)}`} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="mb-4 flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-200 text-xs md:text-sm font-bold text-gray-700 active:bg-gray-200 transition-colors"
+                    className="mb-4 flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 active:bg-gray-200 transition-colors"
                   >
                     <span className="flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-red-500" /> Buka Peta {act.location.split(',')[0]}
@@ -703,7 +769,7 @@
 
                 {act.todo && act.todo.length > 0 && (
                   <div className="space-y-2 mt-2">
-                    <p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Daftar Kegiatan:</p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Daftar Kegiatan:</p>
                     {act.todo.map((task, idx) => {
                       const taskId = `${act.id}_t${idx}`;
                       const isChecked = userTasks.includes(taskId);
@@ -716,9 +782,9 @@
                             checked={isChecked}
                             onChange={() => toggleTask(taskId)}
                             disabled={!canEdit}
-                            className="mt-0.5 w-4 h-4 md:w-5 md:h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            className="mt-0.5 w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                           />
-                          <span className={`text-xs md:text-sm leading-tight mt-0.5 ${isChecked ? 'line-through text-gray-400' : 'text-gray-700 font-bold'}`}>
+                          <span className={`text-xs leading-tight mt-1 ${isChecked ? 'line-through text-gray-400' : 'text-gray-700 font-bold'}`}>
                             {task}
                           </span>
                         </label>
@@ -732,34 +798,40 @@
         );
       };
 
-      const WeatherWidget = () => (
-        <div className="flex gap-3 mb-6 overflow-x-auto pb-2 hide-scrollbar snap-x">
-          <div className="bg-white border border-gray-100 p-3 rounded-2xl flex-shrink-0 flex items-center gap-3 shadow-sm min-w-[130px] snap-center">
-            <div className="bg-orange-50 p-2 rounded-full"><Sun className="w-4 h-4 text-orange-500" /></div>
-            <div><p className="text-[10px] text-gray-500 font-bold uppercase">Kuala Lumpur</p><p className="font-extrabold text-gray-800 text-sm">32°C</p></div>
-          </div>
-          <div className="bg-white border border-gray-100 p-3 rounded-2xl flex-shrink-0 flex items-center gap-3 shadow-sm min-w-[130px] snap-center">
-            <div className="bg-blue-50 p-2 rounded-full"><CloudRain className="w-4 h-4 text-blue-500" /></div>
-            <div><p className="text-[10px] text-gray-500 font-bold uppercase">Melaka</p><p className="font-extrabold text-gray-800 text-sm">28°C</p></div>
-          </div>
+      const FilterHari = () => (
+        <div className="flex gap-2 overflow-x-auto hide-scrollbar py-2 mb-4 sticky top-0 bg-gray-50 z-30 border-b border-gray-200 px-4 -mx-4 shadow-sm">
+          <button onClick={() => setSelectedDay(null)} className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors border ${selectedDay === null ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-gray-600 border-gray-200 active:bg-gray-100'}`}>Semua Hari</button>
+          {[1, 2, 3, 4, 5].map(day => (
+            <button key={day} onClick={() => setSelectedDay(day)} className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors border ${selectedDay === day ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-gray-600 border-gray-200 active:bg-gray-100'}`}>Hari {day}</button>
+          ))}
         </div>
       );
 
-      const TripSummary = () => (
-        <div className="bg-blue-600 rounded-2xl p-4 mb-8 text-white shadow-md">
-          <h3 className="font-bold text-base mb-2 flex items-center">
-            <Compass className="w-4 h-4 mr-2" /> Ringkasan Perjalanan
-          </h3>
-          <p className="text-xs text-blue-50 leading-relaxed">
-            Tur 5 hari: KL, Melaka, Putrajaya. Fokus pada efisiensi waktu, foto viral, dan kenyamanan. Transportasi menggunakan Minivan Hiace.
-          </p>
+      const BottomNav = () => (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around p-2 pb-safe z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+          <button onClick={() => setActiveTab('jadwal')} className={`flex flex-col items-center p-2 w-16 ${activeTab === 'jadwal' ? 'text-blue-600' : 'text-gray-400'}`}>
+            <Calendar className="w-6 h-6" />
+            <span className="text-[10px] font-bold mt-1">Jadwal</span>
+          </button>
+          <button onClick={() => setActiveTab('peta')} className={`flex flex-col items-center p-2 w-16 ${activeTab === 'peta' ? 'text-blue-600' : 'text-gray-400'}`}>
+            <MapIcon className="w-6 h-6" />
+            <span className="text-[10px] font-bold mt-1">Peta</span>
+          </button>
+          <button onClick={() => setActiveTab('profil')} className={`flex flex-col items-center p-2 w-16 ${activeTab === 'profil' ? 'text-blue-600' : 'text-gray-400'}`}>
+            <User className="w-6 h-6" />
+            <span className="text-[10px] font-bold mt-1">Profil</span>
+          </button>
+          <button onClick={() => setActiveTab('info')} className={`flex flex-col items-center p-2 w-16 ${activeTab === 'info' ? 'text-blue-600' : 'text-gray-400'}`}>
+            <Info className="w-6 h-6" />
+            <span className="text-[10px] font-bold mt-1">Info</span>
+          </button>
         </div>
       );
 
       if (!currentUser) {
         return (
           <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-900 relative">
-            <img src="https://image.pollinations.ai/prompt/Kuala%20Lumpur%20Twin%20Towers%20dramatic%20sky?width=1000&height=600&nologo=true" className="absolute inset-0 w-full h-full object-cover opacity-40" />
+            <img src="https://images.unsplash.com/photo-1541838634568-1afec5515259?auto=format&fit=crop&w=800&q=80" className="absolute inset-0 w-full h-full object-cover opacity-40" />
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm text-center relative z-10">
               {isDemoMode && (
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md whitespace-nowrap">
@@ -991,7 +1063,6 @@
                     <div className="mb-4">
                       <span className="bg-blue-600 text-white px-2.5 py-1 rounded-md text-[10px] font-bold uppercase mb-1 inline-block">Hari {day.day}</span>
                       <h3 className="text-lg font-extrabold text-gray-900 leading-tight">{day.title}</h3>
-                      <p className="text-gray-500 font-bold text-xs">{day.date}</p>
                     </div>
                     <div className="space-y-0">
                       {day.activities.map((act, i) => (
@@ -1021,56 +1092,135 @@
         );
       }
 
-      return (
-        <div className="min-h-screen bg-gray-50 pb-24">
-          <div className="relative h-56 bg-gray-900 rounded-b-[2rem] shadow-md overflow-hidden">
-            <img src="https://image.pollinations.ai/prompt/Kuala%20Lumpur%20skyline%20sunset?width=800&height=600&nologo=true" className="w-full h-full object-cover opacity-50" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-            <div className="absolute top-4 right-4">
-              <button onClick={handleLogout} className="bg-white/20 p-2 rounded-full text-white">
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="absolute bottom-5 left-5 right-5">
-              <h1 className="text-2xl font-extrabold text-white mb-1">Halo, {currentUser.realName || currentUser.name}!</h1>
-              <p className="text-gray-300 text-xs font-medium">Jadwal personal Kamu.</p>
-              <div className="flex flex-wrap gap-1.5 mt-3">
-                {currentUser.interests.map((tag, i) => (
-                  <span key={i} className="bg-white/20 text-white text-[10px] px-2.5 py-1 rounded-md font-bold border border-white/30">
-                    {formatTag(tag)}
-                  </span>
+      // Tampilan Berdasarkan Tab yang Aktif
+      const renderTabContent = () => {
+        if (activeTab === 'jadwal') {
+          return (
+            <div className="px-4 mt-4">
+              <FilterHari />
+              <div className="space-y-8">
+                {ITINERARY.filter(d => selectedDay === null || d.day === selectedDay).map((day, idx) => (
+                  <div key={idx} className="relative">
+                    <div className="sticky top-16 z-20 bg-white/90 backdrop-blur-md border border-gray-200 py-3 px-4 rounded-2xl shadow-sm mb-4 flex justify-between items-center">
+                      <div>
+                        <h2 className="text-base font-extrabold text-gray-900">{day.title}</h2>
+                        <p className="text-blue-600 font-bold text-[10px] uppercase">{day.date}</p>
+                      </div>
+                      <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-500 text-xs">
+                        {day.day}
+                      </div>
+                    </div>
+                    <div className="ml-1">
+                      {day.activities.map((act, i) => {
+                        const match = isRecommended(act.tags, currentUser.interests);
+                        return <ActivityCard key={i} act={act} match={match} />;
+                      })}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
-          </div>
+          );
+        }
 
-          <div className="max-w-md mx-auto px-4 mt-5">
-            <WeatherWidget />
-            <TripSummary />
+        if (activeTab === 'peta') {
+          return (
+            <div className="px-4 mt-6 h-[70vh] flex flex-col">
+              <h2 className="text-xl font-extrabold text-gray-900 mb-4 flex items-center"><MapIcon className="w-6 h-6 mr-2 text-blue-600" /> Peta Sentral</h2>
+              <div className="bg-white rounded-3xl p-2 shadow-sm border border-gray-200 flex-1 overflow-hidden relative">
+                 <iframe 
+                    title="Peta Malaysia"
+                    width="100%" 
+                    height="100%" 
+                    frameBorder="0" 
+                    className="rounded-2xl"
+                    src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d1019992.5132338164!2d101.99616035000001!3d2.7844055!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sm!2sid!4v1700000000000!5m2!1sm!2sid" 
+                    allowFullScreen
+                  ></iframe>
+              </div>
+            </div>
+          );
+        }
 
-            <div className="space-y-8">
-              {ITINERARY.map((day, idx) => (
-                <div key={idx} className="relative">
-                  <div className="sticky top-2 z-20 bg-white/90 backdrop-blur-md border border-gray-200 py-3 px-4 rounded-2xl shadow-sm mb-4 flex justify-between items-center">
-                    <div>
-                      <h2 className="text-base font-extrabold text-gray-900">{day.title}</h2>
-                      <p className="text-blue-600 font-bold text-[10px] uppercase">{day.date}</p>
-                    </div>
-                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-500 text-xs">
-                      {day.day}
-                    </div>
-                  </div>
-                  
-                  <div className="ml-1">
-                    {day.activities.map((act, i) => {
-                      const match = isRecommended(act.tags, currentUser.interests);
-                      return <ActivityCard key={i} act={act} match={match} />;
-                    })}
+        if (activeTab === 'profil') {
+          return (
+            <div className="px-4 mt-6">
+              <h2 className="text-xl font-extrabold text-gray-900 mb-6 flex items-center"><User className="w-6 h-6 mr-2 text-blue-600" /> Profil Kamu</h2>
+              <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-200 mb-6">
+                <div className="mb-6">
+                  <p className="text-xs text-gray-400 font-bold uppercase mb-1">Nama</p>
+                  <p className="text-lg font-extrabold text-gray-900">{currentUser.realName || currentUser.name}</p>
+                </div>
+                <div className="mb-6">
+                  <p className="text-xs text-gray-400 font-bold uppercase mb-1">Pantangan Makanan</p>
+                  <p className="text-base font-bold text-gray-800">{currentUser.diet || 'Tidak ada'}</p>
+                </div>
+                <div className="mb-6">
+                  <p className="text-xs text-gray-400 font-bold uppercase mb-1">Kebutuhan Khusus</p>
+                  <p className="text-base font-bold text-gray-800">{currentUser.needs || 'Tidak ada'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 font-bold uppercase mb-2">Minat Utama</p>
+                  <div className="flex flex-wrap gap-2">
+                    {currentUser.interests.map((tag, i) => (
+                      <span key={i} className="bg-blue-50 text-blue-700 text-xs px-3 py-1.5 rounded-lg font-bold border border-blue-100">{formatTag(tag)}</span>
+                    ))}
                   </div>
                 </div>
-              ))}
+              </div>
+              <button onClick={handleLogout} className="w-full bg-red-50 text-red-600 font-bold py-4 rounded-xl active:bg-red-100 transition-colors shadow-sm flex items-center justify-center">
+                <LogOut className="w-5 h-5 mr-2" /> Keluar Akun
+              </button>
+            </div>
+          );
+        }
+
+        if (activeTab === 'info') {
+          return (
+            <div className="px-4 mt-6">
+              <h2 className="text-xl font-extrabold text-gray-900 mb-4 flex items-center"><Info className="w-6 h-6 mr-2 text-blue-600" /> Pusat Informasi</h2>
+              <div className="mb-6">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Prakiraan Cuaca Harian</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white border border-gray-200 p-4 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-sm">
+                    <div className="bg-orange-50 p-3 rounded-full"><Sun className="w-6 h-6 text-orange-500" /></div>
+                    <div className="text-center"><p className="text-[10px] text-gray-500 font-bold uppercase">Kuala Lumpur</p><p className="font-extrabold text-gray-800 text-lg">32°C</p></div>
+                  </div>
+                  <div className="bg-white border border-gray-200 p-4 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-sm">
+                    <div className="bg-blue-50 p-3 rounded-full"><CloudRain className="w-6 h-6 text-blue-500" /></div>
+                    <div className="text-center"><p className="text-[10px] text-gray-500 font-bold uppercase">Melaka</p><p className="font-extrabold text-gray-800 text-lg">28°C</p></div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-blue-600 rounded-3xl p-6 mb-6 text-white shadow-md">
+                <h3 className="font-extrabold text-lg mb-3 flex items-center"><Compass className="w-5 h-5 mr-2" /> Ringkasan Perjalanan</h3>
+                <p className="text-sm text-blue-50 leading-relaxed font-medium">Tur 5 hari melintasi Kuala Lumpur, Melaka, dan Putrajaya. Kita berfokus pada efisiensi logistik menggunakan Minivan Hiace agar waktu di setiap lokasi viral maksimal.</p>
+              </div>
+              <div className="bg-orange-50 border border-orange-200 p-5 rounded-3xl shadow-sm">
+                <h3 className="font-extrabold text-orange-800 flex items-center mb-3 text-base"><AlertTriangle className="w-5 h-5 mr-2" /> Aturan Ekstraksi Subuh</h3>
+                <p className="text-sm text-orange-700 leading-relaxed font-medium mb-3">Hari ke-5 kita wajib berangkat ke Bandara KLIA2 jam 03:00 pagi. Semua koper dan barang bawaan harus sudah tertata rapi malam sebelumnya.</p>
+              </div>
+            </div>
+          );
+        }
+      };
+
+      return (
+        <div className="min-h-screen bg-gray-50 pb-24">
+          <div className="relative h-48 bg-gray-900 rounded-b-[2rem] shadow-sm overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1541838634568-1afec5515259?auto=format&fit=crop&w=800&q=80" className="w-full h-full object-cover opacity-50" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+            <div className="absolute bottom-5 left-5 right-5">
+              <h1 className="text-2xl font-extrabold text-white mb-1">Trip Malaysia</h1>
+              <p className="text-gray-300 text-xs font-bold uppercase tracking-widest">{currentUser.realName || currentUser.name}</p>
             </div>
           </div>
+
+          <div className="max-w-md mx-auto w-full">
+            {renderTabContent()}
+          </div>
+          
+          <BottomNav />
         </div>
       );
     }
