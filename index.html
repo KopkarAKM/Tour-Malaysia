@@ -9,13 +9,6 @@
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     * { -webkit-tap-highlight-color: transparent; }
-    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
-    @keyframes pulse-ring {
-      0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
-      70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
-      100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
-    }
-    .live-indicator { animation: pulse-ring 2s infinite; }
   </style>
   <script type="importmap">
     {
@@ -37,7 +30,7 @@
   <script type="text/babel" data-type="module">
     import React, { useState, useEffect } from 'react';
     import { createRoot } from 'react-dom/client';
-    import { MapPin, Clock, Users, CheckCircle, AlertTriangle, LogOut, ChevronRight, Info, Trash2, RefreshCw, Sun, CloudRain, CheckSquare, Compass, ExternalLink, Calendar, Map as MapIcon, User, Navigation, ArrowRight, ShoppingBag } from 'lucide-react';
+    import { MapPin, Camera, ShoppingBag, Utensils, Clock, Users, CheckCircle, AlertTriangle, LogOut, ChevronRight, Info, Trash2, RefreshCw, Sun, CloudRain, CheckSquare, Compass, ExternalLink, Calendar, Map as MapIcon, User, Navigation, ArrowRight, ClipboardList, Car, Edit3 } from 'lucide-react';
     import { initializeApp } from 'firebase/app';
     import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
     import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
@@ -69,25 +62,73 @@
     };
 
     const QUESTIONS = [
-      { id: 'q1', text: 'Apa tujuan utama kamu ikut trip ini?', options: [{ text: 'Berburu spot foto estetik', tags: ['foto'] }, { text: 'Mencicipi makanan lokal', tags: ['kuliner'] }, { text: 'Belanja dan cari barang unik', tags: ['belanja_murah', 'belanja_branded'] }] },
-      { id: 'q2', text: 'Gaya belanja seperti apa yang kamu suka?', options: [{ text: 'Barang branded dan baju di Mall', tags: ['belanja_branded'] }, { text: 'Oleh-oleh murah, cokelat, dan pernak-pernik', tags: ['belanja_murah', 'oleh_oleh'] }, { text: 'Tidak terlalu suka belanja, mending jalan-jalan', tags: ['foto', 'santai'] }] },
-      { id: 'q3', text: 'Di malam hari, kegiatan apa yang paling kamu tunggu?', options: [{ text: 'Keliling cari street food dan ngemil', tags: ['kuliner'] }, { text: 'Jalan di area gemerlap kota untuk foto', tags: ['foto'] }, { text: 'Istirahat santai di hotel', tags: ['santai'] }] },
-      { id: 'q4', text: 'Pilih spot foto favorit kamu!', options: [{ text: 'Bangunan bersejarah & budaya', tags: ['foto_budaya'] }, { text: 'Gedung pencakar langit modern', tags: ['foto_modern'] }, { text: 'Pemandangan alam / danau', tags: ['foto_alam'] }] },
-      { id: 'q5', text: 'Preferensi makan siang saat di tempat wisata?', options: [{ text: 'Cari paket hemat yang penting kenyang & halal', tags: ['kuliner_hemat'] }, { text: 'Coba restoran terkenal meski agak mahal', tags: ['kuliner'] }, { text: 'Ikut rombongan saja', tags: ['santai'] }] },
-      { id: 'q6', text: 'Target utama barang yang mau dibeli?', options: [{ text: 'Sepatu dan Baju', tags: ['belanja_branded'] }, { text: 'Cokelat dan makanan ringan', tags: ['oleh_oleh'] }, { text: 'Magnet kulkas dan suvenir kecil', tags: ['belanja_murah'] }] }
+      {
+        id: 'q1',
+        text: 'Apa tujuan utama kamu ikut trip ini?',
+        options: [
+          { text: 'Berburu spot foto estetik', tags: ['foto'] },
+          { text: 'Mencicipi makanan lokal', tags: ['kuliner'] },
+          { text: 'Belanja dan cari barang unik', tags: ['belanja_murah', 'belanja_branded'] }
+        ]
+      },
+      {
+        id: 'q2',
+        text: 'Gaya belanja seperti apa yang kamu suka?',
+        options: [
+          { text: 'Barang branded dan baju di Mall', tags: ['belanja_branded'] },
+          { text: 'Oleh-oleh murah, cokelat, dan pernak-pernik', tags: ['belanja_murah', 'oleh_oleh'] },
+          { text: 'Tidak terlalu suka belanja, mending jalan-jalan', tags: ['foto', 'santai'] }
+        ]
+      },
+      {
+        id: 'q3',
+        text: 'Di malam hari, kegiatan apa yang paling kamu tunggu?',
+        options: [
+          { text: 'Keliling cari street food dan ngemil', tags: ['kuliner'] },
+          { text: 'Jalan di area gemerlap kota untuk foto', tags: ['foto'] },
+          { text: 'Istirahat santai di hotel', tags: ['santai'] }
+        ]
+      },
+      {
+        id: 'q4',
+        text: 'Pilih spot foto favorit kamu!',
+        options: [
+          { text: 'Bangunan bersejarah & budaya', tags: ['foto_budaya'] },
+          { text: 'Gedung pencakar langit modern', tags: ['foto_modern'] },
+          { text: 'Pemandangan alam / danau', tags: ['foto_alam'] }
+        ]
+      },
+      {
+        id: 'q5',
+        text: 'Preferensi makan siang saat di tempat wisata?',
+        options: [
+          { text: 'Cari paket hemat yang penting kenyang & halal', tags: ['kuliner_hemat'] },
+          { text: 'Coba restoran terkenal meski agak mahal', tags: ['kuliner'] },
+          { text: 'Ikut rombongan saja', tags: ['santai'] }
+        ]
+      },
+      {
+        id: 'q6',
+        text: 'Target utama barang yang mau dibeli?',
+        options: [
+          { text: 'Sepatu dan Baju', tags: ['belanja_branded'] },
+          { text: 'Cokelat dan makanan ringan', tags: ['oleh_oleh'] },
+          { text: 'Magnet kulkas dan suvenir kecil', tags: ['belanja_murah'] }
+        ]
+      }
     ];
 
     const PERSONALIZED_INSIGHTS = {
-      'd1_a2': { 'foto': 'Ambil foto low-angle dari kolam Lake Symphony atau dari Jembatan Saloma Link saat lampu menyala.', 'kuliner': 'Area KLCC punya banyak kafe dan restoran. Cocok untuk ngopi sore sambil menunggu senja.', 'belanja_branded': 'Suria KLCC tepat di bawah menara ini. Surga belanja barang bermerek.', 'santai': 'Duduk santai di taman KLCC sambil melihat air mancur menari menjelang malam.' },
-      'd1_a4': { 'foto': 'Persimpangan jalan dengan lampu neon besar adalah spot foto urban terbaik.', 'kuliner': 'Banyak jajanan street food berjejer. Jangan lupa coba es krim atau minuman viral.', 'belanja_branded': 'Kawasan ini dipenuhi mall premium seperti Pavilion dan Lot 10.', 'belanja_murah': 'Sungei Wang Plaza punya banyak pilihan pakaian dengan harga lebih terjangkau.', 'santai': 'Nikmati pertunjukan musisi jalanan (busker) yang sering tampil di depan Lot 10.' },
-      'd2_a1': { 'foto': 'Tangga warna-warni sangat fotogenik. Tangkap momen burung merpati beterbangan di pelataran.', 'kuliner': 'Coba teh tarik asli dan roti canai di kedai Mamak dekat pintu masuk.', 'santai': 'Fokus pada arsitektur luar jika tidak ingin terlalu lelah menaiki anak tangga.' },
-      'd2_a4': { 'foto': 'Kwai Chai Hong menawarkan mural hiper-realis awal abad 20. Siapkan kamera.', 'kuliner': 'Banyak kopi tradisional (Kopitiam) dan camilan lokal yang patut dicoba.', 'belanja_murah': 'Tempat terbaik menawar suvenir, kaos, dan tas. Jangan ragu menawar.', 'oleh_oleh': 'Magnet kulkas dan gantungan kunci dijual murah dalam jumlah banyak di sini.' },
-      'd3_a2': { 'foto': 'Dinding bata merah terakota menyajikan kontras brilian dengan langit biru.', 'santai': 'Banyak becak hias unik yang bisa disewa untuk keliling santai.' },
-      'd3_a3': { 'kuliner': 'Wajib coba Asam Pedas Claypot atau Nyonya Laksa. Kocik Kitchen sangat direkomendasikan.', 'kuliner_hemat': 'Banyak warung di sekitar Jonker yang menawarkan Nasi Ayam Hainan halal porsi kenyang.', 'foto': 'Interior rumah makan Peranakan biasanya memiliki dekorasi antik yang unik.' },
-      'd3_a4': { 'belanja_murah': 'Jalan poros budaya ini penuh toko pakaian lokal dan aksesoris unik buatan tangan.', 'oleh_oleh': 'Pusatnya pernak-pernik klasik, makanan kering, dan kerajinan tangan Melaka.', 'foto_budaya': 'Bangunan bersejarah sepanjang jalan sangat khas arsitektur Baba Nyonya.', 'kuliner': 'Jangan lewatkan cendol Melaka atau jajanan ringan pinggir jalan.' },
-      'd3_a5': { 'foto': 'Tiba jam 16:30 agar air pasang menyentuh dasar masjid, menciptakan efek melayang.', 'foto_alam': 'Bidikan siluet masjid berlatar belakang matahari terbenam di laut lepas.', 'santai': 'Duduk di pinggir laut menikmati angin sore sambil menunggu waktu magrib.' },
-      'd4_a2': { 'foto': 'Astaka Morocco memberikan ilusi foto ala Timur Tengah.', 'foto_alam': 'Danau buatan Putrajaya sangat luas dan bersih, cocok untuk foto pemandangan.', 'santai': 'Kawasan ini sangat tertata dan sepi, enak untuk berjalan santai menikmati arsitektur besar.' },
-      'd4_a4': { 'belanja_branded': 'Incar toko-toko flagship merek internasional. Sering ada diskon khusus.', 'kuliner': 'Kunjungi Bacha Coffee untuk kopi premium atau 13DE Marzo Cafe untuk minuman beruang viral.', 'foto_modern': 'Interior mall sangat mewah dan estetik, terutama di area pameran tengah.' }
+      'd1_a2': { 'foto': 'Ambil foto low-angle dari kolam Lake Symphony.', 'kuliner': 'Area KLCC punya banyak kafe dan restoran.', 'belanja_branded': 'Suria KLCC tepat di bawah menara ini. Surga belanja.', 'santai': 'Duduk santai di taman KLCC.' },
+      'd1_a4': { 'foto': 'Persimpangan jalan dengan lampu neon besar adalah spot foto urban terbaik.', 'kuliner': 'Banyak jajanan street food berjejer.', 'belanja_branded': 'Kawasan ini dipenuhi mall premium.', 'belanja_murah': 'Sungei Wang Plaza punya banyak pilihan.', 'santai': 'Nikmati pertunjukan musisi jalanan.' },
+      'd2_a1': { 'foto': 'Tangga warna-warni sangat fotogenik.', 'kuliner': 'Coba teh tarik asli dan roti canai.', 'santai': 'Fokus pada arsitektur luar.' },
+      'd2_a4': { 'foto': 'Kwai Chai Hong menawarkan mural hiper-realis.', 'kuliner': 'Banyak kopi tradisional dan camilan lokal.', 'belanja_murah': 'Tempat terbaik menawar suvenir.', 'oleh_oleh': 'Magnet kulkas dijual murah di sini.' },
+      'd3_a2': { 'foto': 'Dinding bata merah menyajikan kontras brilian.', 'santai': 'Banyak becak hias unik yang bisa disewa.' },
+      'd3_a3': { 'kuliner': 'Wajib coba Asam Pedas Claypot atau Nyonya Laksa.', 'kuliner_hemat': 'Banyak warung di sekitar Jonker.', 'foto': 'Interior rumah makan Peranakan sangat unik.' },
+      'd3_a4': { 'belanja_murah': 'Jalan ini penuh toko pakaian lokal.', 'oleh_oleh': 'Pusat pernak-pernik klasik.', 'foto_budaya': 'Bangunan bersejarah sangat khas.', 'kuliner': 'Jangan lewatkan cendol Melaka.' },
+      'd3_a5': { 'foto': 'Tiba jam 16:30 agar air pasang menyentuh dasar masjid.', 'foto_alam': 'Bidikan siluet masjid berlatar matahari terbenam.', 'santai': 'Duduk di pinggir laut menikmati angin.' },
+      'd4_a2': { 'foto': 'Astaka Morocco memberikan ilusi foto ala Timur Tengah.', 'foto_alam': 'Danau buatan Putrajaya sangat luas.', 'santai': 'Kawasan ini sangat tertata dan sepi.' },
+      'd4_a4': { 'belanja_branded': 'Incar toko flagship merek internasional.', 'kuliner': 'Kunjungi Bacha Coffee.', 'foto_modern': 'Interior mall sangat mewah.' }
     };
 
     const SOUVENIR_RECOMMENDATIONS = {
@@ -97,71 +138,302 @@
       'd4_a4': ['Kopi Bacha kemasan premium', 'Tumbler Bacha Coffee', 'Pakaian merek internasional']
     };
 
-    const ITINERARY = [
+    const INITIAL_ITINERARY = [
       {
-        day: 1, date: '30 April', title: 'Sinkronisasi Logistik & Estetika',
-        image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Petronas_Towers_and_KLCC_Park_at_dusk_%282023%29.jpg/800px-Petronas_Towers_and_KLCC_Park_at_dusk_%282023%29.jpg',
+        day: 1,
+        date: '30 April',
+        title: 'Sinkronisasi Logistik & Estetika',
+        image: 'https://image.pollinations.ai/prompt/Kuala%20Lumpur%20skyline%20sunset?width=800&height=600&nologo=true',
         activities: [
-          { id: 'd1_a1', time: '13:00', desc: 'Landing di KLIA. Penjemputan dengan Hiace.', tags: ['santai'], location: 'Kuala Lumpur International Airport', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Kuala_Lumpur_International_Airport_KLIA_2_%2827170940344%29.jpg/800px-Kuala_Lumpur_International_Airport_KLIA_2_%2827170940344%29.jpg', insight: 'Persiapkan dokumen MDAC yang sudah diisi online. Kita gunakan Hiace pribadi agar tidak repot menyeret koper.', todo: ['Lolos imigrasi autogate', 'Kumpul di titik temu', 'Masuk Hiace menuju hotel'] },
-          { id: 'd1_a2', time: '14:30', desc: 'Petronas Twin Tower & KL Tower.', tags: ['foto', 'foto_modern', 'belanja_branded'], location: 'Petronas Twin Towers', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Petronas_Towers_and_KLCC_Park_at_dusk_%282023%29.jpg/800px-Petronas_Towers_and_KLCC_Park_at_dusk_%282023%29.jpg', todo: ['Foto berlatar air mancur Lake Symphony', 'Foto low-angle di Jembatan Saloma Link', 'Foto urban di persimpangan Yap Kwan Seng'] },
-          { id: 'd1_a3', time: '16:30', desc: 'Check-in Seeds Hotel Bukit Bintang.', tags: ['santai'], location: 'Seeds Hotel Bukit Bintang', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Bukit_Bintang_Kuala_Lumpur_Malaysia.jpg/800px-Bukit_Bintang_Kuala_Lumpur_Malaysia.jpg', insight: 'Lokasi hotel sangat dekat pusat komersial dan Jalan Alor untuk efisiensi mobilitas.', todo: ['Terima kunci kamar', 'Mandi dan bersih-bersih', 'Isi ulang daya ponsel'] },
-          { id: 'd1_a4', time: '18:00', desc: 'Bukit Bintang Walkway.', tags: ['belanja_branded', 'belanja_murah', 'foto_modern', 'kuliner'], location: 'Pavilion Kuala Lumpur', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Pavilion_Kuala_Lumpur_at_night.jpg/800px-Pavilion_Kuala_Lumpur_at_night.jpg', todo: ['Jalan santai di trotoar Bukit Bintang', 'Lihat pertunjukan pengamen', 'Foto persimpangan ikonik'] },
-          { id: 'd1_a5', time: '19:30', desc: 'Makan malam via GrabFood.', tags: ['kuliner', 'kuliner_hemat'], info: 'Makan di kamar lebih hemat energi.', location: 'Jalan Alor', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/Jalan_Alor%2C_Kuala_Lumpur.jpg/800px-Jalan_Alor%2C_Kuala_Lumpur.jpg', insight: 'Pesan GrabFood ke hotel menghemat energi fisik dan mencegah harga mahal di restoran jalanan.', todo: ['Pilih menu halal di aplikasi', 'Makan malam bersama di kamar', 'Istirahat'] }
+          { 
+            id: 'd1_a1',
+            time: '13:00', 
+            desc: 'Landing di KLIA. Penjemputan dengan Hiace.', 
+            tags: ['santai'],
+            location: 'Kuala Lumpur International Airport',
+            thumbnail: 'https://image.pollinations.ai/prompt/Kuala%20Lumpur%20International%20Airport%20architecture?width=800&height=600&nologo=true',
+            insight: 'Persiapkan dokumen MDAC yang sudah diisi online. Kita gunakan Hiace pribadi agar tidak repot menyeret koper.',
+            todo: ['Lolos imigrasi autogate', 'Kumpul di titik temu', 'Masuk Hiace menuju hotel']
+          },
+          { 
+            id: 'd1_a2',
+            time: '14:30', 
+            desc: 'Petronas Twin Tower & KL Tower.', 
+            tags: ['foto', 'foto_modern'],
+            location: 'Petronas Twin Towers',
+            thumbnail: 'https://image.pollinations.ai/prompt/Petronas%20Twin%20Towers%20Kuala%20Lumpur%20sunny%20day?width=800&height=600&nologo=true',
+            insight: 'Ambil foto dari Taman KLCC dekat kolam Lake Symphony atau dari Jembatan Saloma Link untuk estetika maksimal.',
+            todo: ['Foto berlatar air mancur Lake Symphony', 'Foto low-angle di Jembatan Saloma Link', 'Foto urban di persimpangan Yap Kwan Seng']
+          },
+          { 
+            id: 'd1_a3',
+            time: '16:30', 
+            desc: 'Check-in Seeds Hotel Bukit Bintang.', 
+            tags: ['santai'],
+            location: 'Seeds Hotel Bukit Bintang',
+            thumbnail: 'https://image.pollinations.ai/prompt/Cozy%20modern%20hotel%20room%20interior?width=800&height=600&nologo=true',
+            insight: 'Lokasi hotel sangat dekat pusat komersial dan Jalan Alor untuk efisiensi mobilitas.',
+            todo: ['Terima kunci kamar', 'Mandi dan bersih-bersih', 'Isi ulang daya ponsel']
+          },
+          { 
+            id: 'd1_a4',
+            time: '18:00', 
+            desc: 'Bukit Bintang Walkway.', 
+            tags: ['belanja_branded', 'foto_modern'],
+            location: 'Pavilion Kuala Lumpur',
+            thumbnail: 'https://image.pollinations.ai/prompt/Bukit%20Bintang%20Kuala%20Lumpur%20night%20neon%20lights%20street?width=800&height=600&nologo=true',
+            insight: 'Nikmati suasana musisi jalanan yang berbaur dengan butik internasional di bawah lampu neon.',
+            todo: ['Jalan santai di trotoar Bukit Bintang', 'Lihat pertunjukan pengamen', 'Foto persimpangan ikonik']
+          },
+          { 
+            id: 'd1_a5',
+            time: '19:30', 
+            desc: 'Makan malam via GrabFood.', 
+            tags: ['kuliner'], 
+            info: 'Makan di kamar lebih hemat energi.',
+            location: 'Jalan Alor',
+            thumbnail: 'https://image.pollinations.ai/prompt/Delicious%20Malaysian%20street%20food%20Nasi%20Lemak?width=800&height=600&nologo=true',
+            insight: 'Pesan GrabFood ke hotel menghemat energi fisik dan mencegah harga mahal di restoran jalanan.',
+            todo: ['Pilih menu halal di aplikasi', 'Makan malam bersama di kamar', 'Istirahat']
+          }
         ]
       },
       {
-        day: 2, date: '1 Mei', title: 'Spiritual & Warisan Visual',
-        image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/Batu_Caves_-_Statue_of_Lord_Murugan.jpg/800px-Batu_Caves_-_Statue_of_Lord_Murugan.jpg',
+        day: 2,
+        date: '1 Mei',
+        title: 'Spiritual & Warisan Visual',
+        image: 'https://image.pollinations.ai/prompt/Batu%20Caves%20stairs%20wide%20shot?width=800&height=600&nologo=true',
         activities: [
-          { id: 'd2_a1', time: '08:30', desc: 'Eksplorasi Batu Caves.', tags: ['foto', 'foto_budaya', 'santai'], location: 'Batu Caves', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/Batu_Caves_-_Statue_of_Lord_Murugan.jpg/800px-Batu_Caves_-_Statue_of_Lord_Murugan.jpg', todo: ['Foto dengan patung emas Dewa Murugan', 'Daki 272 anak tangga pelangi', 'Waspada kera liar'] },
-          { id: 'd2_a2', time: '11:30', desc: 'Makan Siang Halal Area Batu Caves.', tags: ['kuliner', 'kuliner_hemat'], location: 'Batu Caves', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Nasi_Lemak_with_Chicken_Curry.jpg/800px-Nasi_Lemak_with_Chicken_Curry.jpg', insight: 'Pilih paket nasi Mamak dengan harga wajar RM 10 - RM 15.', todo: ['Makan paket nasi briyani', 'Pulihkan energi fisik'] },
-          { id: 'd2_a3', time: '13:30', desc: 'Kunjungan Chocolate Boutique.', tags: ['oleh_oleh', 'belanja_murah', 'kuliner'], location: 'Beryl\'s Chocolate Kingdom', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Chocolate.jpg/800px-Chocolate.jpg', insight: 'Sentra inovasi cokelat lokal Malaysia.', todo: ['Cicipi sampel cokelat', 'Beli cokelat tiramisu'] },
-          { id: 'd2_a4', time: '15:30', desc: 'Kwai Chai Hong & Petaling Street.', tags: ['belanja_murah', 'foto_budaya', 'oleh_oleh'], location: 'Kwai Chai Hong', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Petaling_Street_Kuala_Lumpur_Malaysia.jpg/800px-Petaling_Street_Kuala_Lumpur_Malaysia.jpg', todo: ['Berfoto di mural interaktif', 'Tangkap momen lampion senja', 'Belanja suvenir'] },
-          { id: 'd2_a5', time: '19:00', desc: 'Kembali ke Hotel & GrabFood.', tags: ['santai', 'kuliner'], location: 'Seeds Hotel Bukit Bintang', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Bukit_Bintang_Kuala_Lumpur_Malaysia.jpg/800px-Bukit_Bintang_Kuala_Lumpur_Malaysia.jpg', insight: 'Pesan makanan lewat aplikasi untuk memaksimalkan istirahat.', todo: ['Makan malam', 'Cek stok memori HP kamera'] }
+          { 
+            id: 'd2_a1',
+            time: '08:30', 
+            desc: 'Eksplorasi Batu Caves.', 
+            tags: ['foto', 'foto_budaya'],
+            location: 'Batu Caves',
+            thumbnail: 'https://image.pollinations.ai/prompt/Batu%20Caves%20Malaysia%20golden%20statue%20and%20colorful%20stairs?width=800&height=600&nologo=true',
+            insight: 'Datang pagi untuk hindari panas dan massa turis padat.',
+            todo: ['Foto dengan patung emas Dewa Murugan', 'Daki 272 anak tangga pelangi', 'Waspada kera liar']
+          },
+          { 
+            id: 'd2_a2',
+            time: '11:30', 
+            desc: 'Makan Siang Halal Area Batu Caves.', 
+            tags: ['kuliner', 'kuliner_hemat'],
+            location: 'Batu Caves',
+            thumbnail: 'https://image.pollinations.ai/prompt/Nasi%20Briyani%20delicious%20food?width=800&height=600&nologo=true',
+            insight: 'Pilih paket nasi Mamak dengan harga wajar RM 10 - RM 15.',
+            todo: ['Makan paket nasi briyani', 'Pulihkan energi fisik']
+          },
+          { 
+            id: 'd2_a3',
+            time: '13:30', 
+            desc: 'Kunjungan Chocolate Boutique.', 
+            tags: ['oleh_oleh', 'belanja_murah'],
+            location: 'Beryl\'s Chocolate Kingdom',
+            thumbnail: 'https://image.pollinations.ai/prompt/Luxury%20chocolate%20boutique%20display?width=800&height=600&nologo=true',
+            insight: 'Sentra inovasi cokelat lokal Malaysia.',
+            todo: ['Cicipi sampel cokelat', 'Beli cokelat tiramisu']
+          },
+          { 
+            id: 'd2_a4',
+            time: '15:30', 
+            desc: 'Kwai Chai Hong & Petaling Street.', 
+            tags: ['belanja_murah', 'foto_budaya'], 
+            info: 'Siapkan kamera untuk dinding mural.',
+            location: 'Kwai Chai Hong',
+            thumbnail: 'https://image.pollinations.ai/prompt/Kwai%20Chai%20Hong%20Kuala%20Lumpur%20lanterns%20street?width=800&height=600&nologo=true',
+            insight: 'Kwai Chai Hong adalah gang mural hiper-realis awal abad 20. Tangkap cahaya lampion saat senja.',
+            todo: ['Berfoto di mural interaktif', 'Tangkap momen lampion senja', 'Belanja suvenir']
+          },
+          { 
+            id: 'd2_a5',
+            time: '19:00', 
+            desc: 'Kembali ke Hotel & GrabFood.', 
+            tags: ['santai'],
+            location: 'Seeds Hotel Bukit Bintang',
+            thumbnail: 'https://image.pollinations.ai/prompt/Kuala%20Lumpur%20cityscape%20night%20view?width=800&height=600&nologo=true',
+            insight: 'Pesan makanan lewat aplikasi untuk memaksimalkan istirahat.',
+            todo: ['Makan malam', 'Cek stok memori HP kamera']
+          }
         ]
       },
       {
-        day: 3, date: '2 Mei', title: 'Bandaraya Bersejarah Melaka',
-        image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Christ_Church_Melaka.jpg/800px-Christ_Church_Melaka.jpg',
+        day: 3,
+        date: '2 Mei',
+        title: 'Bandaraya Bersejarah Melaka',
+        image: 'https://image.pollinations.ai/prompt/Melaka%20river%20historic%20city?width=800&height=600&nologo=true',
         activities: [
-          { id: 'd3_a1', time: '08:00', desc: 'Logistik Trans-Urban KL-Melaka.', tags: ['santai'], location: 'Melaka', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/North-South_Expressway_near_Rawang.jpg/800px-North-South_Expressway_near_Rawang.jpg', insight: 'Tidur nyenyak selama perjalanan tol 2 jam menggunakan Hiace.', todo: ['Istirahat di mobil'] },
-          { id: 'd3_a2', time: '10:30', desc: 'Bangunan Merah Stadthuys.', tags: ['foto', 'foto_budaya', 'santai'], location: 'Stadthuys Melaka', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Christ_Church_Melaka.jpg/800px-Christ_Church_Melaka.jpg', todo: ['Foto gedung Stadthuys', 'Naik becak hias Melaka'] },
-          { id: 'd3_a3', time: '12:30', desc: 'Makan Siang Halal Melaka.', tags: ['kuliner', 'kuliner_hemat'], location: 'Jonker Street', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Hainanese_Chicken_Rice_Balls.jpg/800px-Hainanese_Chicken_Rice_Balls.jpg', todo: ['Coba Chicken Pongteh', 'Makan Asam Pedas Melaka'] },
-          { id: 'd3_a4', time: '13:30', desc: 'Menelusuri Jonker Walk.', tags: ['belanja_murah', 'oleh_oleh', 'foto_budaya', 'kuliner'], location: 'Jonker Walk Melaka', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Jonker_Street_Night_Market.jpg/800px-Jonker_Street_Night_Market.jpg', todo: ['Susuri toko lama', 'Beli pernak-pernik'] },
-          { id: 'd3_a5', time: '16:00', desc: 'Masjid Selat Melaka.', tags: ['foto', 'foto_alam', 'santai'], location: 'Melaka Straits Mosque', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Malacca_Straits_Mosque_%287%29.jpg/800px-Malacca_Straits_Mosque_%287%29.jpg', todo: ['Foto siluet masjid', 'Salat di area masjid'] },
-          { id: 'd3_a6', time: '18:00', desc: 'Perjalanan kembali ke KL.', tags: ['santai', 'kuliner'], location: 'Kuala Lumpur', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/North-South_Expressway_near_Rawang.jpg/800px-North-South_Expressway_near_Rawang.jpg', insight: 'Kumpulkan pesanan GrabFood di mobil agar makanan siap di hotel.', todo: ['Pesan GrabFood', 'Tidur di perjalanan'] }
+          { 
+            id: 'd3_a1',
+            time: '08:00', 
+            desc: 'Logistik Trans-Urban KL-Melaka.', 
+            tags: ['santai'],
+            location: 'Melaka',
+            thumbnail: 'https://image.pollinations.ai/prompt/Modern%20tourist%20van%20driving%20on%20highway?width=800&height=600&nologo=true',
+            insight: 'Tidur nyenyak selama perjalanan tol 2 jam menggunakan Hiace.',
+            todo: ['Istirahat di mobil']
+          },
+          { 
+            id: 'd3_a2',
+            time: '10:30', 
+            desc: 'Bangunan Merah Stadthuys.', 
+            tags: ['foto', 'foto_budaya'],
+            location: 'Stadthuys Melaka',
+            thumbnail: 'https://image.pollinations.ai/prompt/Stadthuys%20Melaka%20red%20building%20historic?width=800&height=600&nologo=true',
+            insight: 'Dinding bata merah terakota menyajikan kontras brilian dengan langit biru.',
+            todo: ['Foto gedung Stadthuys', 'Naik becak hias Melaka']
+          },
+          { 
+            id: 'd3_a3',
+            time: '12:30', 
+            desc: 'Makan Siang Halal Melaka.', 
+            tags: ['kuliner', 'kuliner_hemat'],
+            location: 'Jonker Street',
+            thumbnail: 'https://image.pollinations.ai/prompt/Asam%20Pedas%20Melaka%20delicious%20food?width=800&height=600&nologo=true',
+            insight: 'Makan di Kocik Kitchen Nyonya Halal atau Asam Pedas Claypot.',
+            todo: ['Coba Chicken Pongteh', 'Makan Asam Pedas Melaka']
+          },
+          { 
+            id: 'd3_a4',
+            time: '13:30', 
+            desc: 'Menelusuri Jonker Walk.', 
+            tags: ['belanja_murah', 'oleh_oleh', 'foto_budaya'],
+            location: 'Jonker Walk Melaka',
+            thumbnail: 'https://image.pollinations.ai/prompt/Jonker%20Walk%20Melaka%20street%20market?width=800&height=600&nologo=true',
+            insight: 'Pusat budaya Peranakan. Ideal untuk barang antik dan suvenir.',
+            todo: ['Susuri toko lama', 'Beli pernak-pernik']
+          },
+          { 
+            id: 'd3_a5',
+            time: '16:00', 
+            desc: 'Masjid Selat Melaka.', 
+            tags: ['foto', 'foto_alam'],
+            location: 'Melaka Straits Mosque',
+            thumbnail: 'https://image.pollinations.ai/prompt/Malacca%20Straits%20Mosque%20sunset%20floating?width=800&height=600&nologo=true',
+            insight: 'Tiba saat air pasang menciptakan efek masjid melayang. Sempurna untuk golden hour.',
+            todo: ['Foto siluet masjid', 'Salat di area masjid']
+          },
+          { 
+            id: 'd3_a6',
+            time: '18:00', 
+            desc: 'Perjalanan kembali ke KL.', 
+            tags: ['santai'],
+            location: 'Kuala Lumpur',
+            thumbnail: 'https://image.pollinations.ai/prompt/Highway%20night%20drive%20long%20exposure?width=800&height=600&nologo=true',
+            insight: 'Kumpulkan pesanan GrabFood di mobil agar makanan siap di hotel.',
+            todo: ['Pesan GrabFood', 'Tidur di perjalanan']
+          }
         ]
       },
       {
-        day: 4, date: '3 Mei', title: 'Geometri & Belanja Viral',
-        image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Putra_Mosque_%282017%29.jpg/800px-Putra_Mosque_%282017%29.jpg',
+        day: 4,
+        date: '3 Mei',
+        title: 'Geometri & Belanja Viral',
+        image: 'https://image.pollinations.ai/prompt/Putrajaya%20bridge%20and%20mosque?width=800&height=600&nologo=true',
         activities: [
-          { id: 'd4_a1', time: '09:00', desc: 'Dataran Merdeka Square.', tags: ['foto', 'foto_budaya'], location: 'Dataran Merdeka', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Sultan_Abdul_Samad_Building_Kuala_Lumpur_Malaysia.jpg/800px-Sultan_Abdul_Samad_Building_Kuala_Lumpur_Malaysia.jpg', todo: ['Foto di Gedung Sultan Abdul Samad', 'Lihat tiang bendera tertinggi'] },
-          { id: 'd4_a2', time: '11:00', desc: 'Eksplorasi Putrajaya.', tags: ['foto', 'foto_alam', 'foto_modern', 'santai'], location: 'Putra Mosque', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Putra_Mosque_%282017%29.jpg/800px-Putra_Mosque_%282017%29.jpg', todo: ['Foto di Astaka Morocco', 'Foto estetis Masjid Putra'] },
-          { id: 'd4_a3', time: '13:00', desc: 'Makan Siang Tepi Danau Putrajaya.', tags: ['kuliner_hemat', 'kuliner', 'foto_alam'], location: 'Ayer@8 Putrajaya', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Putrajaya_Lake.jpg/800px-Putrajaya_Lake.jpg', insight: 'Makan komunal porsi besar dengan pemandangan danau.', todo: ['Makan Nasi Arab', 'Nikmati lanskap danau'] },
-          { id: 'd4_a4', time: '15:30', desc: 'Suria KLCC & Pavilion Bukit Bintang.', tags: ['belanja_branded', 'foto_modern', 'kuliner'], location: 'Pavilion Kuala Lumpur', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Suria_KLCC_entrance.jpg/800px-Suria_KLCC_entrance.jpg', todo: ['Beli kopi Bacha', 'Beli minuman beruang 13DE Marzo', 'Belanja barang mall'] },
-          { id: 'd4_a5', time: '19:30', desc: 'Persiapan Pulang & GrabFood.', tags: ['santai', 'kuliner'], location: 'Seeds Hotel Bukit Bintang', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Bukit_Bintang_Kuala_Lumpur_Malaysia.jpg/800px-Bukit_Bintang_Kuala_Lumpur_Malaysia.jpg', insight: 'Susun koper malam ini. Wajib tidur awal untuk ekstraksi subuh.', todo: ['Packing rapi', 'Makan malam terakhir'] }
+          { 
+            id: 'd4_a1',
+            time: '09:00', 
+            desc: 'Dataran Merdeka Square.', 
+            tags: ['foto', 'foto_budaya'],
+            location: 'Dataran Merdeka',
+            thumbnail: 'https://image.pollinations.ai/prompt/Dataran%20Merdeka%20Kuala%20Lumpur%20historic%20building?width=800&height=600&nologo=true',
+            insight: 'Alun-alun berumput dengan arsitektur hibrida Moorish Mughal.',
+            todo: ['Foto di Gedung Sultan Abdul Samad', 'Lihat tiang bendera tertinggi']
+          },
+          { 
+            id: 'd4_a2',
+            time: '11:00', 
+            desc: 'Eksplorasi Putrajaya.', 
+            tags: ['foto', 'foto_alam', 'foto_modern'],
+            location: 'Putra Mosque',
+            thumbnail: 'https://image.pollinations.ai/prompt/Putra%20Mosque%20Putrajaya%20pink%20dome%20lake?width=800&height=600&nologo=true',
+            insight: 'Fokus bidikan di Astaka Morocco estetika Marrakech dan Masjid Putra.',
+            todo: ['Foto di Astaka Morocco', 'Foto estetis Masjid Putra']
+          },
+          { 
+            id: 'd4_a3',
+            time: '13:00', 
+            desc: 'Makan Siang Tepi Danau Putrajaya.', 
+            tags: ['kuliner_hemat', 'kuliner'],
+            location: 'Ayer@8 Putrajaya',
+            thumbnail: 'https://image.pollinations.ai/prompt/Nasi%20Arab%20Mandi%20delicious%20food?width=800&height=600&nologo=true',
+            insight: 'Makan komunal porsi besar dengan pemandangan danau.',
+            todo: ['Makan Nasi Arab', 'Nikmati lanskap danau']
+          },
+          { 
+            id: 'd4_a4',
+            time: '15:30', 
+            desc: 'Suria KLCC & Pavilion Bukit Bintang.', 
+            tags: ['belanja_branded', 'foto_modern'], 
+            info: 'Incar kedai kopi viral.',
+            location: 'Pavilion Kuala Lumpur',
+            thumbnail: 'https://image.pollinations.ai/prompt/Suria%20KLCC%20luxury%20shopping%20mall%20interior?width=800&height=600&nologo=true',
+            insight: 'Pusat ritel viral. Kunjungi Bacha Coffee dan 13DE Marzo Cafe.',
+            todo: ['Beli kopi Bacha', 'Beli minuman beruang 13DE Marzo', 'Belanja barang mall']
+          },
+          { 
+            id: 'd4_a5',
+            time: '19:30', 
+            desc: 'Persiapan Pulang & GrabFood.', 
+            tags: ['santai'],
+            location: 'Seeds Hotel Bukit Bintang',
+            thumbnail: 'https://image.pollinations.ai/prompt/Packing%20luggage%20in%20hotel%20room?width=800&height=600&nologo=true',
+            insight: 'Susun koper malam ini. Wajib tidur awal untuk ekstraksi subuh.',
+            todo: ['Packing rapi', 'Makan malam terakhir']
+          }
         ]
       },
       {
-        day: 5, date: '4 Mei', title: 'Ekstraksi Subuh ke Bandara',
-        image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Kuala_Lumpur_International_Airport_2_Main_Terminal.jpg/800px-Kuala_Lumpur_International_Airport_2_Main_Terminal.jpg',
+        day: 5,
+        date: '4 Mei',
+        title: 'Ekstraksi Subuh ke Bandara',
+        image: 'https://image.pollinations.ai/prompt/Airplane%20wing%20view%20sunrise?width=800&height=600&nologo=true',
         activities: [
-          { id: 'd5_a1', time: '02:00', desc: 'Bangun dan Check Out Total.', tags: ['santai'], location: 'Seeds Hotel Bukit Bintang', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/KL_Sentral_Departure_Hall.jpg/800px-KL_Sentral_Departure_Hall.jpg', insight: 'Transportasi publik belum buka. Hiace kita siaga penuh.', todo: ['Cek dokumen', 'Kumpul lobi'] },
-          { id: 'd5_a2', time: '03:00', desc: 'Berangkat ke KLIA2.', tags: ['santai'], info: 'Wajib berangkat tepat 03:00.', location: 'KLIA2', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Kuala_Lumpur_International_Airport_2_Main_Terminal.jpg/800px-Kuala_Lumpur_International_Airport_2_Main_Terminal.jpg', insight: 'Jalan bebas hambatan lancar. Estimasi 45 menit perjalanan.', todo: ['Tidur di Hiace'] },
-          { id: 'd5_a3', time: '04:15', desc: 'Proses KLIA2.', tags: ['santai', 'belanja_murah', 'kuliner'], location: 'KLIA2', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Kuala_Lumpur_International_Airport_KLIA_2_%2827170940344%29.jpg/800px-Kuala_Lumpur_International_Airport_KLIA_2_%2827170940344%29.jpg', insight: 'Antrean drop bagasi AirAsia padat. Gerbang masuk jauh.', todo: ['Drop bagasi', 'Lewati imigrasi'] },
-          { id: 'd5_a4', time: '07:15', desc: 'Penerbangan Kembali.', tags: ['santai'], location: 'Kuala Lumpur International Airport', thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/AirAsia_A320.jpg/800px-AirAsia_A320.jpg', insight: 'Misi dokumentasi visual dan budaya selesai.', todo: ['Istirahat penuh di pesawat'] }
+          { 
+            id: 'd5_a1',
+            time: '02:00', 
+            desc: 'Bangun dan Check Out Total.', 
+            tags: ['santai'],
+            location: 'Seeds Hotel Bukit Bintang',
+            thumbnail: 'https://image.pollinations.ai/prompt/Hotel%20lobby%20reception%20modern?width=800&height=600&nologo=true',
+            insight: 'Transportasi publik belum buka. Hiace kita siaga penuh.',
+            todo: ['Cek dokumen', 'Kumpul lobi']
+          },
+          { 
+            id: 'd5_a2',
+            time: '03:00', 
+            desc: 'Berangkat ke KLIA2.', 
+            tags: ['santai'], 
+            info: 'Wajib berangkat tepat 03:00.',
+            location: 'KLIA2',
+            thumbnail: 'https://image.pollinations.ai/prompt/Driving%20to%20airport%20early%20morning?width=800&height=600&nologo=true',
+            insight: 'Jalan bebas hambatan lancar. Estimasi 45 menit perjalanan.',
+            todo: ['Tidur di Hiace']
+          },
+          { 
+            id: 'd5_a3',
+            time: '04:15', 
+            desc: 'Proses KLIA2.', 
+            tags: ['santai'], 
+            location: 'KLIA2',
+            thumbnail: 'https://image.pollinations.ai/prompt/Airport%20terminal%20departure%20hall?width=800&height=600&nologo=true',
+            insight: 'Antrean drop bagasi AirAsia padat. Gerbang masuk jauh, manfaatkan waktu.',
+            todo: ['Drop bagasi', 'Lewati imigrasi']
+          },
+          { 
+            id: 'd5_a4',
+            time: '07:15', 
+            desc: 'Penerbangan Kembali.', 
+            tags: ['santai'],
+            location: 'Kuala Lumpur International Airport',
+            thumbnail: 'https://image.pollinations.ai/prompt/Airplane%20flying%20in%20the%20sky%20sunrise?width=800&height=600&nologo=true',
+            insight: 'Misi sukses.',
+            todo: ['Istirahat penuh di pesawat']
+          }
         ]
       }
     ];
-
-    const FLAT_SCHEDULE = [];
-    ITINERARY.forEach(day => {
-      const dateStr = DATE_MAP[day.date];
-      day.activities.forEach(act => {
-        FLAT_SCHEDULE.push({ ...act, datetime: new Date(`${dateStr}T${act.time}:00+08:00`), dayTitle: day.title, dayDate: day.date });
-      });
-    });
 
     const getTagEmoji = (tag) => {
       if (tag.includes('kuliner')) return '🍽️ ';
@@ -186,7 +458,18 @@
       return bestInsight;
     };
 
+    const getFallbackImage = (seed) => {
+      return `https://api.dicebear.com/8.x/shapes/svg?seed=${encodeURIComponent(seed)}&backgroundColor=e2e8f0`;
+    };
+
+    const isRecommended = (activityTags, userInterests) => {
+      if (!userInterests || !Array.isArray(userInterests) || userInterests.length === 0) return false;
+      if (userInterests.includes('semua')) return true;
+      return (activityTags || []).some(tag => userInterests.includes(tag));
+    };
+
     function App() {
+      const [itinerary, setItinerary] = useState(INITIAL_ITINERARY);
       const [participants, setParticipants] = useState([]);
       const [authUser, setAuthUser] = useState(null);
       const [currentUser, setCurrentUser] = useState(null);
@@ -202,8 +485,11 @@
       const [isDemoMode, setIsDemoMode] = useState(!isFirebaseActive);
       
       const [activeTab, setActiveTab] = useState('jadwal');
+      const [adminTab, setAdminTab] = useState('peserta'); 
       const [selectedDay, setSelectedDay] = useState(null);
       const [now, setNow] = useState(new Date());
+
+      const [editingAct, setEditingAct] = useState(null);
 
       useEffect(() => {
         const timer = setInterval(() => setNow(new Date()), 60000); 
@@ -223,23 +509,43 @@
 
       useEffect(() => {
         if (!isFirebaseActive || !authUser) return;
+        
         const participantsRef = collection(db, 'trip_planner_data');
-        const unsubscribe = onSnapshot(participantsRef, (snapshot) => {
-          const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setParticipants(data);
+        const unsubParticipants = onSnapshot(participantsRef, (snapshot) => {
+          const data = snapshot.docs.filter(d => d.id !== 'master_itinerary').map(doc => ({ id: doc.id, ...doc.data() }));
+          setParticipants(data || []);
           if (currentUser && currentUser.role !== 'admin') {
-            const updatedUser = data.find(u => u.id === currentUser.id);
+            const updatedUser = (data || []).find(u => u.id === currentUser.id);
             if (updatedUser) setCurrentUser(updatedUser);
           }
         }, (error) => console.error("Snapshot error:", error));
-        return () => unsubscribe();
+
+        const unsubItinerary = onSnapshot(doc(db, 'trip_planner_data', 'master_itinerary'), (docSnap) => {
+          if (docSnap.exists()) {
+            setItinerary(docSnap.data().data || INITIAL_ITINERARY);
+          } else {
+            setDoc(doc(db, 'trip_planner_data', 'master_itinerary'), { data: INITIAL_ITINERARY });
+            setItinerary(INITIAL_ITINERARY);
+          }
+        });
+
+        return () => { unsubParticipants(); unsubItinerary(); };
       }, [authUser, currentUser?.id]);
+
+      const flatSchedule = [];
+      (itinerary || []).forEach(day => {
+        const dateStr = DATE_MAP[day.date];
+        (day.activities || []).forEach(act => {
+          flatSchedule.push({ ...act, datetime: new Date(`${dateStr}T${act.time}:00+08:00`), dayTitle: day.title, dayDate: day.date });
+        });
+      });
 
       const handleLoginSubmit = async (e) => {
         e.preventDefault();
         const trimmedName = loginName.trim();
         if (!trimmedName) return;
-        let user = participants.find(u => u.name.toLowerCase() === trimmedName.toLowerCase() || u.realName?.toLowerCase() === trimmedName.toLowerCase());
+
+        let user = (participants || []).find(u => u.name.toLowerCase() === trimmedName.toLowerCase() || u.realName?.toLowerCase() === trimmedName.toLowerCase());
         
         if (!user) {
           const newId = 'u_' + Date.now();
@@ -248,7 +554,7 @@
             const docRef = doc(db, 'trip_planner_data', newId);
             await setDoc(docRef, user);
           } else {
-            setParticipants(prev => [...prev, user]);
+            setParticipants(prev => [...(prev || []), user]);
           }
         } else {
           if(!user.checkedTasks) user.checkedTasks = [];
@@ -269,6 +575,7 @@
           setShowAdminModal(false);
           setAdminPassword('');
           setAdminError('');
+          setAdminTab('peserta');
         } else {
           setAdminError("Password salah.");
         }
@@ -287,7 +594,7 @@
           const docRef = doc(db, 'trip_planner_data', currentUser.id);
           await setDoc(docRef, updatedUser, { merge: true });
         } else {
-          setParticipants(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
+          setParticipants(prev => (prev || []).map(u => u.id === currentUser.id ? updatedUser : u));
         }
       };
 
@@ -300,7 +607,7 @@
       const finishSurvey = async (lastTags, lastQuestionId) => {
         const allAnswers = { ...currentAnswers, [lastQuestionId]: lastTags };
         let calculatedTags = [];
-        Object.values(allAnswers).forEach(tags => calculatedTags = [...calculatedTags, ...tags]);
+        Object.values(allAnswers).forEach(tags => calculatedTags = [...calculatedTags, ...(tags || [])]);
         const uniqueTags = [...new Set(calculatedTags)];
         const finalUserData = { ...currentUser, hasCompletedSurvey: true, interests: uniqueTags };
         setCurrentUser(finalUserData);
@@ -308,13 +615,13 @@
           const docRef = doc(db, 'trip_planner_data', currentUser.id);
           await setDoc(docRef, finalUserData, { merge: true });
         } else {
-          setParticipants(prev => prev.map(u => u.id === currentUser.id ? finalUserData : u));
+          setParticipants(prev => (prev || []).map(u => u.id === currentUser.id ? finalUserData : u));
         }
       };
 
       const toggleTask = async (taskId) => {
-        if (currentUser.role === 'admin') return;
-        const currentTasks = currentUser.checkedTasks || [];
+        if (currentUser?.role === 'admin') return;
+        const currentTasks = currentUser?.checkedTasks || [];
         const isChecked = currentTasks.includes(taskId);
         let newTasks = isChecked ? currentTasks.filter(id => id !== taskId) : [...currentTasks, taskId];
         const updatedUser = { ...currentUser, checkedTasks: newTasks };
@@ -323,14 +630,8 @@
           const docRef = doc(db, 'trip_planner_data', currentUser.id);
           await updateDoc(docRef, { checkedTasks: newTasks });
         } else {
-           setParticipants(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
+           setParticipants(prev => (prev || []).map(u => u.id === currentUser.id ? updatedUser : u));
         }
-      };
-
-      const isRecommended = (activityTags, userInterests) => {
-        if (!userInterests || userInterests.length === 0) return false;
-        if (userInterests.includes('semua')) return true;
-        return activityTags.some(tag => userInterests.includes(tag));
       };
 
       const executeAction = async () => {
@@ -339,39 +640,69 @@
           if (isFirebaseActive && authUser) {
             const userRef = doc(db, 'trip_planner_data', modalConfig.user.id);
             await deleteDoc(userRef);
-          } else { setParticipants(prev => prev.filter(u => u.id !== modalConfig.user.id)); }
+          } else { setParticipants(prev => (prev || []).filter(u => u?.id !== modalConfig.user.id)); }
         } else if (modalConfig.type === 'reset') {
            const resetData = { hasCompletedSurvey: false, interests: [], diet: '', needs: '', checkedTasks: [] };
            if (isFirebaseActive && authUser) {
               const userRef = doc(db, 'trip_planner_data', modalConfig.user.id);
               await updateDoc(userRef, resetData);
-           } else { setParticipants(prev => prev.map(u => u.id === modalConfig.user.id ? {...u, ...resetData} : u)); }
+           } else { setParticipants(prev => (prev || []).map(u => u?.id === modalConfig.user.id ? {...u, ...resetData} : u)); }
         }
         setModalConfig({ isOpen: false, type: '', user: null });
       };
 
-      const ActivityCard = ({ act, match }) => {
+      const handleSaveActivity = async (e) => {
+        e.preventDefault();
+        const newItinerary = [...(itinerary || [])];
+        if(newItinerary[editingAct.dayIdx] && newItinerary[editingAct.dayIdx].activities) {
+            newItinerary[editingAct.dayIdx].activities[editingAct.actIdx] = editingAct.data;
+        }
+        if (isFirebaseActive && authUser) {
+          await setDoc(doc(db, 'trip_planner_data', 'master_itinerary'), { data: newItinerary });
+        } else {
+          setItinerary(newItinerary);
+        }
+        setEditingAct(null);
+      };
+
+      const ActivityCard = ({ act, dayIdx, actIdx, match, isAdmin }) => {
+        if (!act) return null;
         const userTasks = currentUser?.checkedTasks || [];
-        const allChecked = act.todo && act.todo.length > 0 && act.todo.every((_, idx) => userTasks.includes(`${act.id}_t${idx}`));
-        const personalizedInsight = getPersonalizedInsights(act.id, currentUser?.interests);
+        const allChecked = (act.todo && act.todo.length > 0) ? act.todo.every((_, idx) => userTasks.includes(`${act.id}_t${idx}`)) : false;
+        const personalizedInsight = getPersonalizedInsights(act.id, currentUser?.interests || []);
         const souvenirs = SOUVENIR_RECOMMENDATIONS[act.id];
+
+        const handleImageError = (e) => {
+          e.target.onerror = null; 
+          e.target.src = getFallbackImage(act.desc || act.title || 'trip');
+        };
 
         return (
           <div className="relative pl-5 pb-6" id={`act-${act.id}`}>
             <div className="absolute left-[9px] top-6 bottom-0 w-0.5 bg-blue-200"></div>
-            <div className={`absolute left-0 top-1.5 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm z-10 ${allChecked ? 'bg-green-500' : 'bg-blue-600'}`}>
-               {allChecked ? <CheckCircle className="w-2.5 h-2.5 text-white" /> : <Clock className="w-2.5 h-2.5 text-white" />}
+            <div className={`absolute left-0 top-1.5 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm z-10 ${allChecked && !isAdmin ? 'bg-green-500' : 'bg-blue-600'}`}>
+               {allChecked && !isAdmin ? <CheckCircle className="w-2.5 h-2.5 text-white" /> : <Clock className="w-2.5 h-2.5 text-white" />}
             </div>
 
             <div className={`rounded-2xl overflow-hidden shadow-md transition-all duration-300 bg-white border ${match ? 'border-blue-400 ring-1 ring-blue-100' : 'border-gray-100'}`}>
               <div className="relative h-32 md:h-48 w-full group overflow-hidden">
-                <img src={act.thumbnail} alt={act.desc} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                <img 
+                  src={act.thumbnail || getFallbackImage(act.desc)} 
+                  alt={act.desc} 
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                  onError={handleImageError}
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4">
                   <div className="flex justify-between items-end">
                     <div>
                       <span className="text-blue-300 font-bold text-xs mb-1 block">{act.time}</span>
                       <h3 className="text-white text-base md:text-lg font-bold leading-tight">{act.desc}</h3>
                     </div>
+                    {isAdmin && (
+                      <button onClick={() => setEditingAct({ dayIdx, actIdx, data: { ...act } })} className="bg-white/20 p-2 rounded-lg backdrop-blur-sm text-white hover:bg-white/40">
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -380,7 +711,7 @@
                 {match && <div className="mb-3"><span className="inline-block bg-blue-600 text-white text-[10px] px-2 py-1 rounded font-bold shadow-sm">Rekomendasi Untukmu</span></div>}
                 
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {act.tags.map((tag, tIdx) => (<span key={tIdx} className="text-[10px] md:text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-md font-bold border border-gray-200">{formatTag(tag)}</span>))}
+                  {(act.tags || []).map((tag, tIdx) => (<span key={tIdx} className="text-[10px] md:text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-md font-bold border border-gray-200">{formatTag(tag)}</span>))}
                 </div>
 
                 {(personalizedInsight || act.insight) && (
@@ -397,7 +728,7 @@
                       <span className="font-bold">Rekomendasi Oleh-oleh:</span>
                     </div>
                     <ul className="list-disc pl-6 space-y-1">
-                      {souvenirs.map((item, idx) => (
+                      {(souvenirs || []).map((item, idx) => (
                         <li key={idx} className="font-medium text-pink-800">{item}</li>
                       ))}
                     </ul>
@@ -417,13 +748,13 @@
                   </div>
                 )}
 
-                {act.todo && act.todo.length > 0 && (
+                {act.todo && act.todo.length > 0 && !isAdmin && (
                   <div className="space-y-2 mt-2">
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Daftar Kegiatan:</p>
-                    {act.todo.map((task, idx) => {
+                    {(act.todo || []).map((task, idx) => {
                       const taskId = `${act.id}_t${idx}`;
                       const isChecked = userTasks.includes(taskId);
-                      const canEdit = currentUser.role === 'user';
+                      const canEdit = currentUser?.role === 'user';
                       
                       return (
                         <label key={idx} className={`flex items-start gap-3 p-2 rounded-lg transition-colors cursor-pointer ${isChecked ? 'bg-green-50' : 'active:bg-gray-50'}`}>
@@ -445,18 +776,20 @@
         let nextAct = null;
         let status = 'PRE-TRIP';
 
-        if (now < FLAT_SCHEDULE[0].datetime) {
-          status = 'PRE-TRIP';
-          nextAct = FLAT_SCHEDULE[0];
-        } else if (now > FLAT_SCHEDULE[FLAT_SCHEDULE.length - 1].datetime) {
-          status = 'POST-TRIP';
-        } else {
-          status = 'ON-TRIP';
-          for (let i = 0; i < FLAT_SCHEDULE.length; i++) {
-            if (now >= FLAT_SCHEDULE[i].datetime && (!FLAT_SCHEDULE[i+1] || now < FLAT_SCHEDULE[i+1].datetime)) {
-              currentAct = FLAT_SCHEDULE[i];
-              nextAct = FLAT_SCHEDULE[i+1] || null;
-              break;
+        if (flatSchedule.length > 0) {
+          if (now < flatSchedule[0].datetime) {
+            status = 'PRE-TRIP';
+            nextAct = flatSchedule[0];
+          } else if (now > flatSchedule[flatSchedule.length - 1].datetime) {
+            status = 'POST-TRIP';
+          } else {
+            status = 'ON-TRIP';
+            for (let i = 0; i < flatSchedule.length; i++) {
+              if (now >= flatSchedule[i].datetime && (!flatSchedule[i+1] || now < flatSchedule[i+1].datetime)) {
+                currentAct = flatSchedule[i];
+                nextAct = flatSchedule[i+1] || null;
+                break;
+              }
             }
           }
         }
@@ -521,7 +854,7 @@
       );
 
       const BottomNav = () => {
-        if (currentUser.role === 'admin') return null; 
+        if (currentUser?.role === 'admin') return null; 
         return (
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around p-2 pb-safe z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
             <button onClick={() => setActiveTab('jadwal')} className={`flex flex-col items-center p-2 w-16 ${activeTab === 'jadwal' ? 'text-blue-600' : 'text-gray-400'}`}><Calendar className="w-6 h-6" /><span className="text-[10px] font-bold mt-1">Jadwal</span></button>
@@ -532,11 +865,10 @@
         );
       };
 
-      // --- LOGIN SCREEN ---
       if (!currentUser) {
         return (
           <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-900 relative">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Petronas_Towers_and_KLCC_Park_at_dusk_%282023%29.jpg/800px-Petronas_Towers_and_KLCC_Park_at_dusk_%282023%29.jpg" className="absolute inset-0 w-full h-full object-cover opacity-40" />
+            <img src="https://image.pollinations.ai/prompt/Kuala%20Lumpur%20skyline%20sunset?width=800&height=600&nologo=true" className="absolute inset-0 w-full h-full object-cover opacity-40" />
             <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm text-center relative z-10">
               {isDemoMode && <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md whitespace-nowrap">Mode Uji Coba Offline</div>}
               <div className="bg-blue-600 w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg"><MapPin className="text-white w-7 h-7" /></div>
@@ -565,8 +897,7 @@
         );
       }
 
-      // --- USER SURVEY SCREEN ---
-      if (currentUser.role === 'user' && !currentUser.hasCompletedSurvey) {
+      if (currentUser?.role === 'user' && !currentUser?.hasCompletedSurvey) {
         if (surveyStep === 0) {
           return (
             <div className="min-h-screen bg-gray-50 p-4 flex flex-col">
@@ -598,7 +929,7 @@
                 <h2 className="text-xl font-extrabold text-gray-800 leading-snug">{question.text}</h2>
               </div>
               <div className="space-y-3">
-                {question.options.map((option, idx) => (
+                {(question.options || []).map((option, idx) => (
                   <button key={idx} onClick={() => handleAnswer(question.id, option.tags)} className="w-full p-4 bg-white border border-gray-200 rounded-2xl text-left active:border-blue-500 active:bg-blue-50 font-bold text-gray-700 text-sm flex items-center justify-between shadow-sm"><span className="pr-4">{option.text}</span><ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" /></button>
                 ))}
               </div>
@@ -607,52 +938,40 @@
         );
       }
 
-      // --- ADMIN SCREEN ---
-      if (currentUser.role === 'admin') {
-        return (
-          <div className="min-h-screen bg-gray-50 pb-20">
-            <div className="bg-blue-700 text-white p-5 rounded-b-[2rem] shadow-md">
-              <div className="flex justify-between items-center mb-2"><h1 className="text-xl font-extrabold">Pusat Komando</h1><button onClick={handleLogout} className="bg-white/20 p-2 rounded-full"><LogOut className="w-4 h-4" /></button></div>
-              <p className="opacity-90 text-xs font-medium">Pantau peserta di sini.</p>
-            </div>
-            <div className="max-w-4xl mx-auto px-4 mt-6">
-              {isDemoMode && <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 rounded-r-xl mb-6 shadow-sm"><h3 className="font-bold text-yellow-800 text-sm mb-1">Mode Uji Coba</h3><p className="text-xs text-yellow-700">Aplikasi belum terhubung ke Firebase.</p></div>}
-              <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-r-xl mb-6 shadow-sm">
-                <h3 className="font-bold text-orange-800 flex items-center mb-1 text-sm"><AlertTriangle className="w-4 h-4 mr-2" /> Pengingat Logistik</h3>
-                <ul className="list-disc list-inside text-xs text-orange-700 font-medium"><li>03:00 Pagi berangkat dari hotel.</li><li>Kumpulkan pesanan GrabFood di mobil.</li></ul>
-              </div>
-              <h2 className="text-lg font-extrabold text-gray-800 mb-4 flex items-center"><Users className="w-5 h-5 mr-2 text-blue-600" /> Monitor Pasukan</h2>
-              
-              <div className="md:hidden space-y-4 mb-8">
-                {participants.filter(u => u.role !== 'admin').map(user => (
-                  <div key={user.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="font-bold text-gray-800">{user.realName || user.name}</span>
-                      {user.hasCompletedSurvey ? <span className="inline-flex items-center text-green-700 bg-green-50 px-2 py-1 rounded text-[10px] font-bold"><CheckCircle className="w-3 h-3 mr-1"/> Selesai</span> : <span className="text-gray-500 bg-gray-50 px-2 py-1 rounded text-[10px] font-bold">Menunggu</span>}
+      if (currentUser?.role === 'admin') {
+        const renderAdminContent = () => {
+          if (adminTab === 'peserta') {
+            return (
+              <div className="space-y-4">
+                <h2 className="text-lg font-extrabold text-gray-800 mb-4 flex items-center"><Users className="w-5 h-5 mr-2 text-blue-600" /> Monitor Pasukan</h2>
+                <div className="md:hidden space-y-4 mb-8">
+                  {(participants || []).filter(u => u?.role !== 'admin').map(user => (
+                    <div key={user.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="font-bold text-gray-800">{user.realName || user.name}</span>
+                        {user?.hasCompletedSurvey ? <span className="inline-flex items-center text-green-700 bg-green-50 px-2 py-1 rounded text-[10px] font-bold"><CheckCircle className="w-3 h-3 mr-1"/> Selesai</span> : <span className="text-gray-500 bg-gray-50 px-2 py-1 rounded text-[10px] font-bold">Menunggu</span>}
+                      </div>
+                      <div className="text-xs text-gray-600 mb-1"><span className="font-bold">Diet:</span> {user.diet || '-'}</div>
+                      <div className="text-xs text-gray-600 mb-3"><span className="font-bold">Catatan:</span> {user.needs || '-'}</div>
+                      <div className="flex flex-wrap gap-1 mb-4">{(user.interests || []).map((tag, i) => (<span key={i} className="bg-blue-50 text-blue-700 text-[10px] px-2 py-1 rounded font-bold border border-blue-100">{formatTag(tag)}</span>))}</div>
+                      <div className="flex gap-2">
+                        <button onClick={() => setModalConfig({ isOpen: true, type: 'reset', user })} className="flex-1 py-2 bg-yellow-50 text-yellow-700 rounded-xl font-bold text-xs flex justify-center items-center"><RefreshCw className="w-3 h-3 mr-1"/> Reset</button>
+                        <button onClick={() => setModalConfig({ isOpen: true, type: 'delete', user })} className="flex-1 py-2 bg-red-50 text-red-700 rounded-xl font-bold text-xs flex justify-center items-center"><Trash2 className="w-3 h-3 mr-1"/> Hapus</button>
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-600 mb-1"><span className="font-bold">Diet:</span> {user.diet || '-'}</div>
-                    <div className="text-xs text-gray-600 mb-3"><span className="font-bold">Catatan:</span> {user.needs || '-'}</div>
-                    <div className="flex flex-wrap gap-1 mb-4">{user.interests.map((tag, i) => (<span key={i} className="bg-blue-50 text-blue-700 text-[10px] px-2 py-1 rounded font-bold border border-blue-100">{formatTag(tag)}</span>))}</div>
-                    <div className="flex gap-2">
-                      <button onClick={() => setModalConfig({ isOpen: true, type: 'reset', user })} className="flex-1 py-2 bg-yellow-50 text-yellow-700 rounded-xl font-bold text-xs flex justify-center items-center"><RefreshCw className="w-3 h-3 mr-1"/> Reset</button>
-                      <button onClick={() => setModalConfig({ isOpen: true, type: 'delete', user })} className="flex-1 py-2 bg-red-50 text-red-700 rounded-xl font-bold text-xs flex justify-center items-center"><Trash2 className="w-3 h-3 mr-1"/> Hapus</button>
-                    </div>
-                  </div>
-                ))}
-                {participants.filter(u => u.role !== 'admin').length === 0 && <p className="text-center text-sm text-gray-400 font-bold py-4">Belum ada peserta yang masuk.</p>}
-              </div>
-
-              <div className="hidden md:block bg-white rounded-2xl shadow-sm mb-10 overflow-hidden border border-gray-100">
-                <div className="overflow-x-auto">
+                  ))}
+                  {(participants || []).filter(u => u?.role !== 'admin').length === 0 && <p className="text-center text-sm text-gray-400 font-bold py-4">Belum ada peserta.</p>}
+                </div>
+                <div className="hidden md:block bg-white rounded-2xl shadow-sm mb-10 overflow-hidden border border-gray-100">
                   <table className="w-full text-left text-sm whitespace-nowrap">
                     <thead className="bg-gray-50 border-b border-gray-100"><tr><th className="p-4 font-bold text-gray-600 text-xs uppercase">Nama</th><th className="p-4 font-bold text-gray-600 text-xs uppercase">Status</th><th className="p-4 font-bold text-gray-600 text-xs uppercase">Diet</th><th className="p-4 font-bold text-gray-600 text-xs uppercase">Minat</th><th className="p-4 font-bold text-center text-gray-600 text-xs uppercase">Aksi</th></tr></thead>
                     <tbody className="divide-y divide-gray-50">
-                      {participants.filter(u => u.role !== 'admin').map(user => (
+                      {(participants || []).filter(u => u?.role !== 'admin').map(user => (
                         <tr key={user.id}>
                           <td className="p-4 font-bold">{user.realName || user.name}</td>
-                          <td className="p-4">{user.hasCompletedSurvey ? <span className="text-green-600 text-xs font-bold">Selesai</span> : <span className="text-gray-400 text-xs">Menunggu</span>}</td>
+                          <td className="p-4">{user?.hasCompletedSurvey ? <span className="text-green-600 text-xs font-bold">Selesai</span> : <span className="text-gray-400 text-xs">Menunggu</span>}</td>
                           <td className="p-4 text-xs">{user.diet || '-'}</td>
-                          <td className="p-4"><div className="flex gap-1">{user.interests.slice(0, 2).map((tag, i) => (<span key={i} className="bg-blue-50 text-blue-700 text-[10px] px-2 py-1 rounded font-bold">{formatTag(tag)}</span>))}</div></td>
+                          <td className="p-4"><div className="flex gap-1">{(user.interests || []).slice(0, 2).map((tag, i) => (<span key={i} className="bg-blue-50 text-blue-700 text-[10px] px-2 py-1 rounded font-bold">{formatTag(tag)}</span>))}</div></td>
                           <td className="p-4 text-center flex justify-center gap-2"><button onClick={() => setModalConfig({ isOpen: true, type: 'reset', user })} className="p-2 bg-gray-50 rounded"><RefreshCw className="w-4 h-4 text-gray-600"/></button><button onClick={() => setModalConfig({ isOpen: true, type: 'delete', user })} className="p-2 bg-red-50 rounded"><Trash2 className="w-4 h-4 text-red-600"/></button></td>
                         </tr>
                       ))}
@@ -660,8 +979,105 @@
                   </table>
                 </div>
               </div>
+            );
+          }
+          
+          if (adminTab === 'logistik') {
+            const usersWithDiet = (participants || []).filter(u => u?.role !== 'admin' && u.diet && u.diet.toLowerCase() !== 'tidak ada' && u.diet !== '-');
+            const usersWithNeeds = (participants || []).filter(u => u?.role !== 'admin' && u.needs && u.needs.toLowerCase() !== 'tidak ada' && u.needs !== '-');
+
+            return (
+              <div className="space-y-6">
+                <h2 className="text-lg font-extrabold text-gray-800 flex items-center"><ClipboardList className="w-5 h-5 mr-2 text-blue-600" /> Pelayanan & Logistik</h2>
+                
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                  <h3 className="font-extrabold text-sm text-gray-900 mb-3 flex items-center"><Utensils className="w-4 h-4 mr-2 text-orange-500"/> Peringatan Pantangan Makanan</h3>
+                  {usersWithDiet.length > 0 ? (
+                    <ul className="space-y-2">
+                      {usersWithDiet.map(u => <li key={u.id} className="text-xs bg-orange-50 p-2 rounded border border-orange-100"><span className="font-bold">{u.realName}:</span> {u.diet}</li>)}
+                    </ul>
+                  ) : <p className="text-xs text-gray-500">Tidak ada pantangan makanan khusus.</p>}
+                </div>
+
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                  <h3 className="font-extrabold text-sm text-gray-900 mb-3 flex items-center"><Info className="w-4 h-4 mr-2 text-blue-500"/> Kebutuhan Khusus</h3>
+                  {usersWithNeeds.length > 0 ? (
+                    <ul className="space-y-2">
+                      {usersWithNeeds.map(u => <li key={u.id} className="text-xs bg-blue-50 p-2 rounded border border-blue-100"><span className="font-bold">{u.realName}:</span> {u.needs}</li>)}
+                    </ul>
+                  ) : <p className="text-xs text-gray-500">Tidak ada kebutuhan khusus tercatat.</p>}
+                </div>
+
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                  <h3 className="font-extrabold text-sm text-gray-900 mb-3 flex items-center"><Car className="w-4 h-4 mr-2 text-green-500"/> Daftar Tugas Admin</h3>
+                  <div className="space-y-3">
+                    <label className="flex items-start gap-2 text-xs text-gray-700"><input type="checkbox" className="mt-0.5 rounded text-blue-600" /> H-3: Pastikan semua peserta sudah mengisi MDAC (Malaysia Digital Arrival Card).</label>
+                    <label className="flex items-start gap-2 text-xs text-gray-700"><input type="checkbox" className="mt-0.5 rounded text-blue-600" /> H-1: Cek masa berlaku paspor peserta.</label>
+                    <label className="flex items-start gap-2 text-xs text-gray-700"><input type="checkbox" className="mt-0.5 rounded text-blue-600" /> Hari 1: Konfirmasi titik jemput di KLIA dengan sopir Hiace.</label>
+                    <label className="flex items-start gap-2 text-xs text-gray-700"><input type="checkbox" className="mt-0.5 rounded text-blue-600" /> Harian: Rekap pesanan GrabFood jam 17:00 saat peserta di mobil.</label>
+                    <label className="flex items-start gap-2 text-xs text-gray-700"><input type="checkbox" className="mt-0.5 rounded text-blue-600" /> Hari 5: Bangunkan peserta jam 02:00 pagi. Kendaraan jalan tepat 03:00 ke KLIA2.</label>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          if (adminTab === 'editjadwal') {
+            return (
+              <div className="space-y-8">
+                <h2 className="text-lg font-extrabold text-gray-800 mb-4 flex items-center"><Edit3 className="w-5 h-5 mr-2 text-blue-600" /> Editor Jadwal Perjalanan</h2>
+                {(itinerary || []).map((day, dayIdx) => (
+                  <div key={dayIdx} className="bg-white rounded-3xl p-4 border border-gray-100 shadow-sm">
+                    <div className="mb-4"><span className="bg-blue-600 text-white px-2.5 py-1 rounded-md text-[10px] font-bold uppercase mb-1 inline-block">Hari {day.day}</span><h3 className="text-lg font-extrabold text-gray-900 leading-tight">{day.title}</h3></div>
+                    <div className="space-y-0">
+                      {(day.activities || []).map((act, actIdx) => (
+                        <ActivityCard key={actIdx} act={act} dayIdx={dayIdx} actIdx={actIdx} match={false} isAdmin={true} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          }
+        };
+
+        return (
+          <div className="min-h-screen bg-gray-50 pb-20">
+            <div className="bg-blue-700 text-white p-5 rounded-b-[2rem] shadow-md sticky top-0 z-40">
+              <div className="flex justify-between items-center mb-4">
+                <h1 className="text-xl font-extrabold">Pusat Komando</h1>
+                <button onClick={handleLogout} className="bg-white/20 p-2 rounded-full"><LogOut className="w-4 h-4" /></button>
+              </div>
+              <div className="flex bg-blue-800 rounded-xl p-1 gap-1 overflow-x-auto hide-scrollbar">
+                <button onClick={() => setAdminTab('peserta')} className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${adminTab === 'peserta' ? 'bg-white text-blue-700 shadow-sm' : 'text-blue-100 hover:bg-blue-700'}`}>Data Peserta</button>
+                <button onClick={() => setAdminTab('logistik')} className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${adminTab === 'logistik' ? 'bg-white text-blue-700 shadow-sm' : 'text-blue-100 hover:bg-blue-700'}`}>Logistik</button>
+                <button onClick={() => setAdminTab('editjadwal')} className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${adminTab === 'editjadwal' ? 'bg-white text-blue-700 shadow-sm' : 'text-blue-100 hover:bg-blue-700'}`}>Edit Jadwal</button>
+              </div>
+            </div>
+
+            <div className="max-w-4xl mx-auto px-4 mt-6">
+              {isDemoMode && <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 rounded-r-xl mb-6 shadow-sm"><h3 className="font-bold text-yellow-800 text-sm mb-1">Mode Uji Coba</h3><p className="text-xs text-yellow-700">Aplikasi belum terhubung ke Firebase.</p></div>}
+              {renderAdminContent()}
             </div>
             
+            {editingAct && (
+              <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+                  <h3 className="text-lg font-extrabold text-gray-900 mb-4">Edit Aktivitas</h3>
+                  <form onSubmit={handleSaveActivity} className="space-y-4">
+                    <div><label className="text-xs font-bold text-gray-500 uppercase">Jam</label><input type="time" value={editingAct.data.time} onChange={e => setEditingAct({...editingAct, data: {...editingAct.data, time: e.target.value}})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold mt-1" required/></div>
+                    <div><label className="text-xs font-bold text-gray-500 uppercase">Deskripsi Utama</label><input type="text" value={editingAct.data.desc} onChange={e => setEditingAct({...editingAct, data: {...editingAct.data, desc: e.target.value}})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold mt-1" required/></div>
+                    <div><label className="text-xs font-bold text-gray-500 uppercase">Lokasi Peta</label><input type="text" value={editingAct.data.location} onChange={e => setEditingAct({...editingAct, data: {...editingAct.data, location: e.target.value}})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold mt-1"/></div>
+                    <div><label className="text-xs font-bold text-gray-500 uppercase">Catatan Khusus (Info)</label><input type="text" value={editingAct.data.info || ''} onChange={e => setEditingAct({...editingAct, data: {...editingAct.data, info: e.target.value}})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold mt-1" placeholder="Kosongkan jika tidak ada"/></div>
+                    <div className="flex gap-2 pt-2">
+                      <button type="button" onClick={() => setEditingAct(null)} className="flex-1 py-3 text-gray-600 bg-gray-100 rounded-xl font-bold text-sm">Batal</button>
+                      <button type="submit" className="flex-1 py-3 text-white bg-blue-600 rounded-xl font-bold text-sm">Simpan Perubahan</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
             {modalConfig.isOpen && (
               <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
                 <div className="bg-white rounded-2xl p-6 w-full max-w-xs shadow-2xl">
@@ -678,7 +1094,6 @@
         );
       }
 
-      // --- USER MAIN SCREEN ---
       const renderTabContent = () => {
         if (activeTab === 'jadwal') {
           return (
@@ -686,16 +1101,16 @@
               <LiveTripStatus />
               <FilterHari />
               <div className="space-y-8">
-                {ITINERARY.filter(d => selectedDay === null || d.day === selectedDay).map((day, idx) => (
+                {(itinerary || []).filter(d => selectedDay === null || d.day === selectedDay).map((day, idx) => (
                   <div key={idx} className="relative">
                     <div className="sticky top-16 z-20 bg-white/90 backdrop-blur-md border border-gray-200 py-3 px-4 rounded-2xl shadow-sm mb-4 flex justify-between items-center">
                       <div><h2 className="text-base font-extrabold text-gray-900">{day.title}</h2><p className="text-blue-600 font-bold text-[10px] uppercase">{day.date}</p></div>
                       <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-500 text-xs">{day.day}</div>
                     </div>
                     <div className="ml-1">
-                      {day.activities.map((act, i) => {
-                        const match = isRecommended(act.tags, currentUser.interests);
-                        return <ActivityCard key={i} act={act} match={match} />;
+                      {(day.activities || []).map((act, i) => {
+                        const match = isRecommended(act.tags, currentUser?.interests);
+                        return <ActivityCard key={i} act={act} match={match} isAdmin={false} />;
                       })}
                     </div>
                   </div>
@@ -721,13 +1136,13 @@
             <div className="px-4 mt-6">
               <h2 className="text-xl font-extrabold text-gray-900 mb-6 flex items-center"><User className="w-6 h-6 mr-2 text-blue-600" /> Profil Kamu</h2>
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-200 mb-6">
-                <div className="mb-6"><p className="text-xs text-gray-400 font-bold uppercase mb-1">Nama</p><p className="text-lg font-extrabold text-gray-900">{currentUser.realName || currentUser.name}</p></div>
-                <div className="mb-6"><p className="text-xs text-gray-400 font-bold uppercase mb-1">Pantangan Makanan</p><p className="text-base font-bold text-gray-800">{currentUser.diet || 'Tidak ada'}</p></div>
-                <div className="mb-6"><p className="text-xs text-gray-400 font-bold uppercase mb-1">Kebutuhan Khusus</p><p className="text-base font-bold text-gray-800">{currentUser.needs || 'Tidak ada'}</p></div>
+                <div className="mb-6"><p className="text-xs text-gray-400 font-bold uppercase mb-1">Nama</p><p className="text-lg font-extrabold text-gray-900">{currentUser?.realName || currentUser?.name}</p></div>
+                <div className="mb-6"><p className="text-xs text-gray-400 font-bold uppercase mb-1">Pantangan Makanan</p><p className="text-base font-bold text-gray-800">{currentUser?.diet || 'Tidak ada'}</p></div>
+                <div className="mb-6"><p className="text-xs text-gray-400 font-bold uppercase mb-1">Kebutuhan Khusus</p><p className="text-base font-bold text-gray-800">{currentUser?.needs || 'Tidak ada'}</p></div>
                 <div>
                   <p className="text-xs text-gray-400 font-bold uppercase mb-2">Minat Utama</p>
                   <div className="flex flex-wrap gap-2">
-                    {currentUser.interests.map((tag, i) => (<span key={i} className="bg-blue-50 text-blue-700 text-xs px-3 py-1.5 rounded-lg font-bold border border-blue-100">{formatTag(tag)}</span>))}
+                    {(currentUser?.interests || []).map((tag, i) => (<span key={i} className="bg-blue-50 text-blue-700 text-xs px-3 py-1.5 rounded-lg font-bold border border-blue-100">{formatTag(tag)}</span>))}
                   </div>
                 </div>
               </div>
@@ -767,14 +1182,14 @@
       return (
         <div className="min-h-screen bg-gray-50 pb-24">
           <div className="relative h-48 bg-gray-900 rounded-b-[2rem] shadow-sm overflow-hidden">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Petronas_Towers_and_KLCC_Park_at_dusk_%282023%29.jpg/800px-Petronas_Towers_and_KLCC_Park_at_dusk_%282023%29.jpg" className="w-full h-full object-cover opacity-50" />
+            <img src="https://image.pollinations.ai/prompt/Kuala%20Lumpur%20skyline%20sunset?width=800&height=600&nologo=true" className="w-full h-full object-cover opacity-50" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
             <div className="absolute top-4 right-4">
               <button onClick={handleLogout} className="bg-white/20 p-2 rounded-full text-white"><LogOut className="w-4 h-4" /></button>
             </div>
             <div className="absolute bottom-5 left-5 right-5">
               <h1 className="text-2xl font-extrabold text-white mb-1">Trip Malaysia</h1>
-              <p className="text-gray-300 text-xs font-bold uppercase tracking-widest">{currentUser.realName || currentUser.name}</p>
+              <p className="text-gray-300 text-xs font-bold uppercase tracking-widest">{currentUser?.realName || currentUser?.name}</p>
             </div>
           </div>
           <div className="max-w-md mx-auto w-full">{renderTabContent()}</div>
