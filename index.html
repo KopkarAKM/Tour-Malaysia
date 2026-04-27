@@ -1,962 +1,1030 @@
-import React, { useState, useEffect } from 'react';
-import { MapPin, Clock, Users, CheckCircle, AlertTriangle, LogOut, ChevronRight, Info, Trash2, RefreshCw, Sun, CloudRain, CheckSquare, Compass, ExternalLink, Calendar, Map as MapIcon, User, Navigation, ArrowRight, ClipboardList, Utensils, Car, Edit3, ShoppingBag, FileText } from 'lucide-react';
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
-
-const GOOGLE_PLACES_API_KEY = ""; 
-
-const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-const DATE_MAP = {
-  '30 April': '2026-04-30',
-  '1 Mei': '2026-05-01',
-  '2 Mei': '2026-05-02',
-  '3 Mei': '2026-05-03',
-  '4 Mei': '2026-05-04',
-};
-
-const QUESTIONS = [
-  { id: 'q1', text: 'Apa tujuan utama kamu ikut trip ini?', options: [{ text: 'Berburu spot foto estetik', tags: ['foto'] }, { text: 'Mencicipi makanan lokal', tags: ['kuliner'] }, { text: 'Belanja dan cari barang unik', tags: ['belanja_murah', 'belanja_branded'] }] },
-  { id: 'q2', text: 'Gaya belanja seperti apa yang kamu suka?', options: [{ text: 'Barang branded dan baju di Mall', tags: ['belanja_branded'] }, { text: 'Oleh-oleh murah, cokelat, dan pernak-pernik', tags: ['belanja_murah', 'oleh_oleh'] }, { text: 'Tidak terlalu suka belanja, mending jalan-jalan', tags: ['foto', 'santai'] }] },
-  { id: 'q3', text: 'Di malam hari, kegiatan apa yang paling kamu tunggu?', options: [{ text: 'Keliling cari street food dan ngemil', tags: ['kuliner'] }, { text: 'Jalan di area gemerlap kota untuk foto', tags: ['foto'] }, { text: 'Istirahat santai di hotel', tags: ['santai'] }] },
-  { id: 'q4', text: 'Pilih spot foto favorit kamu!', options: [{ text: 'Bangunan bersejarah & budaya', tags: ['foto_budaya'] }, { text: 'Gedung pencakar langit modern', tags: ['foto_modern'] }, { text: 'Pemandangan alam / danau', tags: ['foto_alam'] }] },
-  { id: 'q5', text: 'Preferensi makan siang saat di tempat wisata?', options: [{ text: 'Cari paket hemat yang penting kenyang & halal', tags: ['kuliner_hemat'] }, { text: 'Coba restoran terkenal meski agak mahal', tags: ['kuliner'] }, { text: 'Ikut rombongan saja', tags: ['santai'] }] },
-  { id: 'q6', text: 'Target utama barang yang mau dibeli?', options: [{ text: 'Sepatu dan Baju', tags: ['belanja_branded'] }, { text: 'Cokelat dan makanan ringan', tags: ['oleh_oleh'] }, { text: 'Magnet kulkas dan suvenir kecil', tags: ['belanja_murah'] }] }
-];
-
-const PERSONALIZED_INSIGHTS = {
-  'd1_a2': { 'foto': 'Ambil foto dari kolam Lake Symphony.', 'kuliner': 'Area KLCC punya banyak kafe dan restoran.', 'belanja_branded': 'Suria KLCC tepat di bawah menara ini.', 'santai': 'Duduk santai di taman KLCC.' },
-  'd1_a4': { 'foto': 'Persimpangan jalan dengan lampu neon besar adalah spot foto urban terbaik.', 'kuliner': 'Jalan Alor memiliki banyak jajanan street food.', 'belanja_branded': 'Kawasan ini dipenuhi mall premium.', 'belanja_murah': 'Sungei Wang Plaza punya banyak pilihan pakaian.', 'santai': 'Nikmati pertunjukan musisi jalanan.' },
-  'd2_a1': { 'foto': 'Tangga warna-warni sangat fotogenik.', 'kuliner': 'Coba teh tarik asli di kedai dekat pintu masuk.', 'santai': 'Fokus pada arsitektur luar.' },
-  'd2_a2': { 'kuliner': 'Nikmati inovasi cokelat rasa buah-buahan lokal.', 'belanja_murah': 'Beli paket bundling agar lebih hemat.', 'oleh_oleh': 'Pilihan cokelat durian sangat populer.' },
-  'd2_a3': { 'foto': 'Kawasan ini memiliki mural dan bangunan kuno.', 'kuliner': 'Banyak kopi tradisional dan camilan lokal.', 'belanja_murah': 'Tempat terbaik menawar suvenir.', 'oleh_oleh': 'Magnet kulkas dijual murah di sini.' },
-  'd3_a1': { 'foto': 'Tangkap lanskap kota dari ketinggian.', 'santai': 'Nikmati pemandangan tanpa hambatan.' },
-  'd3_a2': { 'foto': 'Dinding bata bangunan Sultan Abdul Samad menyajikan kontras brilian.', 'foto_budaya': 'Area ini penuh dengan arsitektur bersejarah.', 'santai': 'Duduk santai di lapangan rumput.' },
-  'd3_a3': { 'foto': 'Desain arsitektur masjid sangat indah di sore hari.', 'foto_budaya': 'Pelajari sejarah perpaduan arsitektur Moor.', 'santai': 'Rasakan suasana tenang di pinggir sungai.' },
-  'd3_a4': { 'belanja_branded': 'Kunjungi butik desainer internasional.', 'kuliner': 'Banyak pilihan restoran premium di dalam mall.', 'foto_modern': 'Interior mall sangat mewah dan modern.' },
-  'd4_a1': { 'foto': 'Masjid Pink memberikan ilusi foto ala Timur Tengah.', 'foto_alam': 'Danau buatan Putrajaya sangat luas dan jernih.', 'santai': 'Kawasan ini sangat tertata dan rapi.' },
-  'd4_a2': { 'belanja_murah': 'Tempat terbaik mencari kerajinan tangan lokal.', 'oleh_oleh': 'Beli batik atau gantungan kunci di sini.', 'foto_budaya': 'Bangunan bergaya art deco yang indah.' }
-};
-
-const SOUVENIR_RECOMMENDATIONS = {
-  'd1_a4': ['Baju dan sepatu merek internasional', 'Aksesoris modis', 'Parfum branded'],
-  'd2_a2': ['Cokelat rasa Tiramisu', 'Cokelat isi Durian', 'Praline Almond kemasan kotak'],
-  'd2_a3': ['Kaos tulisan I Love KL', 'Magnet kulkas Menara Kembar', 'Gantungan kunci', 'Tas rajut lokal'],
-  'd3_a4': ['Pakaian merek internasional', 'Kosmetik', 'Barang elektronik'],
-  'd4_a2': ['Kain batik Malaysia', 'Kerajinan tangan kayu', 'Kartu pos vintage', 'Pernak-pernik seni']
-};
-
-const INITIAL_ITINERARY = [
-  {
-    day: 1, date: '30 April', title: 'Kedatangan & Eksplorasi Pusat Kota',
-    activities: [
-      { id: 'd1_a1', time: '13:00', desc: 'Penerbangan Bdj-Kul via AK441 & Landing KL.', tags: ['santai'], location: 'KLIA2', insight: 'Proses imigrasi dan pengambilan bagasi.', todo: ['Lolos imigrasi', 'Kumpul rombongan'], thumbnail: 'https://images.unsplash.com/photo-1569154941061-e231b4725ef1?w=800&q=80' },
-      { id: 'd1_a2', time: '15:00', desc: 'Petronas Twin Tower.', tags: ['foto', 'foto_modern'], location: 'Petronas Twin Towers', insight: 'Ikon utama Kuala Lumpur. Siapkan kamera untuk foto arsitektur.', todo: ['Foto berlatar menara kembar', 'Jalan santai di taman'], thumbnail: 'https://images.unsplash.com/photo-1584646098378-0874589d76b1?w=800&q=80' },
-      { id: 'd1_a3', time: '17:00', desc: 'Check-in Hotel Seeds Bukit Bintang.', tags: ['santai'], location: 'Seeds Hotel Bukit Bintang', insight: 'Istirahat sejenak setelah penerbangan.', todo: ['Terima kunci kamar', 'Mandi dan bersih-bersih', 'Isi ulang daya ponsel'], thumbnail: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=800&q=80' },
-      { id: 'd1_a4', time: '18:30', desc: 'Bukit Bintang Walkway & Alor Street.', tags: ['belanja_murah', 'kuliner', 'santai'], location: 'Bukit Bintang', insight: 'Nikmati suasana malam dan kuliner kaki lima.', todo: ['Jalan santai', 'Mencoba makanan jalanan', 'Makan malam'], thumbnail: 'https://images.unsplash.com/photo-1596422846543-74c6e25501f4?w=800&q=80' }
-    ]
-  },
-  {
-    day: 2, date: '1 Mei', title: 'Batu Caves & Perburuan Suvenir',
-    activities: [
-      { id: 'd2_a1', time: '09:00', desc: 'Eksplorasi Batu Caves.', tags: ['foto_budaya', 'santai'], location: 'Batu Caves', insight: 'Kunjungi situs religius dengan patung raksasa dan tangga warna-warni.', todo: ['Foto patung emas', 'Daki 272 tangga'], thumbnail: 'https://images.unsplash.com/photo-1518342880790-252f483d3e8e?w=800&q=80' },
-      { id: 'd2_a2', time: '13:00', desc: 'Chocolate Boutique.', tags: ['oleh_oleh', 'kuliner'], location: 'Kuala Lumpur', insight: 'Pusat produksi cokelat lokal berkualitas.', todo: ['Mencicipi cokelat gratis', 'Beli oleh-oleh cokelat'], thumbnail: 'https://images.unsplash.com/photo-1548907040-4baa42d10919?w=800&q=80' },
-      { id: 'd2_a3', time: '15:30', desc: 'Petaling Street Market.', tags: ['belanja_murah', 'foto_budaya'], location: 'Petaling Street', insight: 'Pusat perbelanjaan pecinan untuk suvenir murah.', todo: ['Tawar menawar barang', 'Belanja suvenir'], thumbnail: 'https://images.unsplash.com/photo-1555940280-4566c75dfa36?w=800&q=80' }
-    ]
-  },
-  {
-    day: 3, date: '2 Mei', title: 'Kawasan Sejarah & Mal Premium',
-    activities: [
-      { id: 'd3_a1', time: '09:00', desc: 'KL Tower.', tags: ['foto', 'foto_modern'], location: 'KL Tower', insight: 'Menara komunikasi dengan pemandangan kota 360 derajat.', todo: ['Naik ke observation deck', 'Foto pemandangan kota'], thumbnail: 'https://images.unsplash.com/photo-1596422846543-74c6e25501f4?w=800&q=80' },
-      { id: 'd3_a2', time: '11:00', desc: 'Dataran Merdeka.', tags: ['foto_budaya', 'foto'], location: 'Dataran Merdeka', insight: 'Alun-alun bersejarah dengan arsitektur memukau.', todo: ['Foto gedung bersejarah', 'Lihat tiang bendera tertinggi'], thumbnail: 'https://images.unsplash.com/photo-1601058269781-80cb33dc783e?w=800&q=80' },
-      { id: 'd3_a3', time: '14:00', desc: 'Mesjid Jamek.', tags: ['foto_budaya', 'santai'], location: 'Masjid Jamek Kuala Lumpur', insight: 'Salah satu masjid tertua di KL dengan arsitektur Moorish.', todo: ['Mengagumi arsitektur masjid', 'Beristirahat sejenak'], thumbnail: 'https://images.unsplash.com/photo-1541838634568-1afec5515259?w=800&q=80' },
-      { id: 'd3_a4', time: '16:00', desc: 'KLCC Mall.', tags: ['belanja_branded', 'kuliner'], location: 'Suria KLCC', insight: 'Pusat perbelanjaan premium di kaki Menara Petronas.', todo: ['Belanja barang merek internasional', 'Mencari kafe untuk bersantai'], thumbnail: 'https://images.unsplash.com/photo-1582650535185-5a7c2957b458?w=800&q=80' }
-    ]
-  },
-  {
-    day: 4, date: '3 Mei', title: 'Geometri Putrajaya & Pasar Seni',
-    activities: [
-      { id: 'd4_a1', time: '09:00', desc: 'Dataran Putrajaya.', tags: ['foto_alam', 'foto_modern', 'foto_budaya'], location: 'Putrajaya', insight: 'Pusat administrasi dengan desain arsitektur yang megah.', todo: ['Foto Masjid Pink', 'Melihat pemandangan danau', 'Keliling area Putrajaya'], thumbnail: 'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?w=800&q=80' },
-      { id: 'd4_a2', time: '14:00', desc: 'Central Market.', tags: ['belanja_murah', 'oleh_oleh', 'foto_budaya'], location: 'Central Market Kuala Lumpur', insight: 'Pusat seni dan kerajinan tangan Malaysia.', todo: ['Belanja kerajinan tangan', 'Melihat karya seni lokal'], thumbnail: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?w=800&q=80' }
-    ]
-  },
-  {
-    day: 5, date: '4 Mei', title: 'Ekstraksi Dini Hari & Kepulangan',
-    activities: [
-      { id: 'd5_a1', time: '02:00', desc: 'Check Out Hotel Seeds Bukit Bintang.', tags: ['santai'], location: 'Bukit Bintang', insight: 'Bersiap dini hari. Pastikan tidak ada barang tertinggal.', todo: ['Kumpul lobi', 'Cek dokumen'], thumbnail: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&q=80' },
-      { id: 'd5_a2', time: '03:00', desc: 'Dropping KLIA2 Airport.', tags: ['santai'], location: 'KLIA2', insight: 'Perjalanan malam hari menuju bandara.', todo: ['Tidur di perjalanan', 'Tiba di bandara'], thumbnail: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&q=80' },
-      { id: 'd5_a3', time: '07:15', desc: 'Flight KL-Bdj Via AK442.', tags: ['santai'], location: 'KLIA2', insight: 'Penerbangan kembali pulang.', todo: ['Proses imigrasi', 'Istirahat di pesawat'], thumbnail: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=800&q=80' }
-    ]
-  }
-];
-
-const getTagEmoji = (tag) => {
-  if (tag.includes('kuliner')) return '🍽️ ';
-  if (tag.includes('foto')) return '📸 ';
-  if (tag.includes('belanja') || tag.includes('oleh')) return '🛍️ ';
-  return '🍃 ';
-};
-
-const formatTag = (tag) => {
-  return getTagEmoji(tag) + tag.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-};
-
-const getPersonalizedInsights = (actId, userInterests) => {
-  const insightsForAct = PERSONALIZED_INSIGHTS[actId];
-  if (!insightsForAct || !userInterests || userInterests.length === 0) return null;
-  let bestInsight = null;
-  for (const interest of userInterests) {
-    if (insightsForAct[interest]) { bestInsight = insightsForAct[interest]; break; }
-    const partialMatchKey = Object.keys(insightsForAct).find(k => interest.includes(k) || k.includes(interest));
-    if (partialMatchKey) { bestInsight = insightsForAct[partialMatchKey]; break; }
-  }
-  return bestInsight;
-};
-
-const getFallbackImage = (seed) => {
-  return `https://api.dicebear.com/8.x/shapes/svg?seed=${encodeURIComponent(seed)}&backgroundColor=e2e8f0`;
-};
-
-const isRecommended = (activityTags, userInterests) => {
-  if (!userInterests || !Array.isArray(userInterests) || userInterests.length === 0) return false;
-  if (userInterests.includes('semua')) return true;
-  return (activityTags || []).some(tag => userInterests.includes(tag));
-};
-
-const globalPhotoCache = {};
-let isGoogleMapsLoading = false;
-let isGoogleMapsLoaded = false;
-
-const loadGooglePlacesAPI = (apiKey, callback) => {
-  if (isGoogleMapsLoaded) {
-    callback();
-    return;
-  }
-  if (isGoogleMapsLoading) {
-    setTimeout(() => loadGooglePlacesAPI(apiKey, callback), 500);
-    return;
-  }
-  isGoogleMapsLoading = true;
-  const script = document.createElement('script');
-  script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-  script.async = true;
-  script.defer = true;
-  script.onload = () => {
-    isGoogleMapsLoaded = true;
-    callback();
-  };
-  document.head.appendChild(script);
-};
-
-const ActivityImage = ({ location, desc, defaultImage }) => {
-  const [imgSrc, setImgSrc] = useState(globalPhotoCache[location] || null);
-  
-  useEffect(() => {
-    if (imgSrc || !GOOGLE_PLACES_API_KEY) return;
-    loadGooglePlacesAPI(GOOGLE_PLACES_API_KEY, () => {
-      if (globalPhotoCache[location]) { setImgSrc(globalPhotoCache[location]); return; }
-      const service = new window.google.maps.places.PlacesService(document.createElement('div'));
-      service.textSearch({ query: location + ' Malaysia' }, (results, status) => {
-        if (status === window.google.maps.places.PlacesServiceStatus.OK && results[0] && results[0].photos) {
-          const url = results[0].photos[0].getUrl({ maxWidth: 800 });
-          globalPhotoCache[location] = url; setImgSrc(url);
-        } else {
-          globalPhotoCache[location] = 'error'; setImgSrc('error');
-        }
-      });
-    });
-  }, [location]);
-
-  if (!imgSrc || imgSrc === 'error') {
-     return <img src={defaultImage} alt={desc} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />;
-  }
-  return <img src={imgSrc} alt={desc} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />;
-};
-
-const HotelVoucherCard = () => (
-  <div className="bg-white border border-gray-200 p-5 rounded-3xl shadow-sm mb-6">
-    <h3 className="font-extrabold text-blue-800 flex items-center mb-4 text-base">
-      <FileText className="w-5 h-5 mr-2" /> Bukti Pemesanan Hotel
-    </h3>
-    <div className="bg-blue-50 p-4 rounded-2xl mb-4 border border-blue-100">
-      <p className="text-xs text-gray-500 font-bold uppercase mb-1">Booking ID</p>
-      <p className="font-extrabold text-gray-900 text-lg tracking-widest">1329097433</p>
-    </div>
-    <div className="space-y-3 text-sm">
-      <div>
-        <p className="text-xs text-gray-500 font-bold uppercase">Nama Hotel</p>
-        <p className="font-bold text-gray-800">Seeds Hotel Bukit Bintang</p>
-        <p className="text-xs text-gray-600 mt-1">78, Jln Alor, Bukit Bintang, Kuala Lumpur, 55100</p>
-        <p className="text-xs text-gray-600 mt-1">+600127170376</p>
-      </div>
-      <div className="grid grid-cols-2 gap-2 border-t border-gray-100 pt-3">
-        <div>
-          <p className="text-xs text-gray-500 font-bold uppercase">Check-in</p>
-          <p className="font-bold text-gray-800 text-xs mt-1">30 Apr 2026<br/>15:00</p>
-        </div>
-        <div>
-          <p className="text-xs text-gray-500 font-bold uppercase">Check-out</p>
-          <p className="font-bold text-gray-800 text-xs mt-1">04 Mei 2026<br/>12:30</p>
-        </div>
-      </div>
-      <div className="border-t border-gray-100 pt-3">
-        <p className="text-xs text-gray-500 font-bold uppercase mb-2">Daftar Tamu (5 Kamar Twin)</p>
-        <ul className="text-[11px] text-gray-700 space-y-1.5 font-medium list-disc pl-4">
-          <li>Ria Tahfazona Subeli & Nanda Amelia</li>
-          <li>Effrima Yanti & Rahmi Muthmainnah Rizami</li>
-          <li>Dzaky Hasni Putera & Ario Pranoto</li>
-          <li>Bahliani & Andra Orahim</li>
-          <li>Hendra & Muhammad Aqbi Suharna</li>
-        </ul>
-      </div>
-      <div className="bg-green-50 p-3 rounded-xl border border-green-100 mt-4 flex items-start">
-        <CheckCircle className="w-4 h-4 text-green-600 mr-2 flex-shrink-0 mt-0.5" />
-        <p className="text-xs text-green-800 font-bold leading-tight">Lunas. Termasuk 10 Sarapan & WiFi Gratis.</p>
-      </div>
-    </div>
-  </div>
-);
-
-export default function App() {
-  const [itinerary, setItinerary] = useState(INITIAL_ITINERARY);
-  const [participants, setParticipants] = useState([]);
-  const [authUser, setAuthUser] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [currentAnswers, setCurrentAnswers] = useState({});
-  const [surveyStep, setSurveyStep] = useState(0); 
-  const [tempProfile, setTempProfile] = useState({ name: '', diet: '', needs: '' });
-  const [loginName, setLoginName] = useState('');
-  const [modalConfig, setModalConfig] = useState({ isOpen: false, type: '', user: null });
-  const [showAdminModal, setShowAdminModal] = useState(false);
-  const [adminPassword, setAdminPassword] = useState('');
-  const [adminError, setAdminError] = useState('');
-  const [profileError, setProfileError] = useState('');
-  const [isDemoMode, setIsDemoMode] = useState(true); 
-  
-  const [activeTab, setActiveTab] = useState('jadwal');
-  const [adminTab, setAdminTab] = useState('peserta'); 
-  const [selectedDay, setSelectedDay] = useState(null);
-  const [now, setNow] = useState(new Date('2026-04-30T12:00:00+08:00')); 
-
-  const [editingAct, setEditingAct] = useState(null);
-
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 60000); 
-    return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
-        }
-        setIsDemoMode(false);
-      } catch (error) {
-        console.error("Auth Error:", error);
-        setIsDemoMode(true);
-      }
-    };
-    initAuth();
-    const unsubscribe = onAuthStateChanged(auth, setAuthUser);
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (!authUser) return;
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Trip Planner Malaysia</title>
     
-    // Menggunakan 5 segmen untuk koleksi sesuai standar
-    const participantsRef = collection(db, 'artifacts', appId, 'public', 'data', 'participants');
-    const unsubParticipants = onSnapshot(participantsRef, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setParticipants(data || []);
-      if (currentUser && currentUser.role !== 'admin') {
-        const updatedUser = (data || []).find(u => u.id === currentUser.id);
-        if (updatedUser) setCurrentUser(updatedUser);
-      }
-    }, (error) => console.error("Snapshot error:", error));
-
-    // Menggunakan 6 segmen untuk dokumen sesuai standar
-    const masterItineraryRef = doc(db, 'artifacts', appId, 'public', 'data', 'app_state', 'master_itinerary');
-    const unsubItinerary = onSnapshot(masterItineraryRef, (docSnap) => {
-      if (docSnap.exists()) {
-        setItinerary(docSnap.data().data || INITIAL_ITINERARY);
-      } else {
-        setDoc(masterItineraryRef, { data: INITIAL_ITINERARY });
-        setItinerary(INITIAL_ITINERARY);
-      }
-    });
-
-    return () => { unsubParticipants(); unsubItinerary(); };
-  }, [authUser, currentUser?.id]);
-
-  const flatSchedule = [];
-  (itinerary || []).forEach(day => {
-    const dateStr = DATE_MAP[day.date];
-    (day.activities || []).forEach(act => {
-      flatSchedule.push({ ...act, datetime: new Date(`${dateStr}T${act.time}:00+08:00`), dayTitle: day.title, dayDate: day.date });
-    });
-  });
-
-  const handleLoginSubmit = async (e) => {
-    e.preventDefault();
-    const trimmedName = loginName.trim();
-    if (!trimmedName) return;
-
-    let user = (participants || []).find(u => u.name.toLowerCase() === trimmedName.toLowerCase() || u.realName?.toLowerCase() === trimmedName.toLowerCase());
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     
-    if (!user) {
-      const newId = 'u_' + Date.now();
-      user = { id: newId, name: trimmedName, realName: trimmedName, role: 'user', hasCompletedSurvey: false, interests: [], diet: '', needs: '', checkedTasks: [] };
-      if (authUser && !isDemoMode) {
-        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', newId);
-        await setDoc(docRef, user);
-      } else {
-        setParticipants(prev => [...(prev || []), user]);
-      }
-    }
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 
-    setCurrentUser(user);
-    setSurveyStep(0);
-    setCurrentAnswers({});
-    setTempProfile({ name: user.realName || '', diet: user.diet || '', needs: user.needs || '' });
-    setActiveTab('jadwal');
-    setSelectedDay(null);
-  };
+    <style>
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 1rem); }
+        .live-indicator { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+        
+        /* Transition untuk view */
+        .view-container { display: none; opacity: 0; transition: opacity 0.3s ease-in-out; }
+        .view-container.active { display: flex; opacity: 1; }
+        .view-container.active-block { display: block; opacity: 1; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans antialiased overflow-x-hidden">
 
-  const handleAdminSubmit = (e) => {
-    e.preventDefault();
-    if (adminPassword === "admin123") {
-      setCurrentUser({ id: 'admin', name: 'Alhamdi', role: 'admin' });
-      setSurveyStep(0);
-      setShowAdminModal(false);
-      setAdminPassword('');
-      setAdminError('');
-      setAdminTab('peserta');
-    } else {
-      setAdminError("Password salah.");
-    }
-  };
-
-  const handleLogout = () => { setCurrentUser(null); setLoginName(''); };
-
-  const handleProfileSubmit = async (e) => {
-    e.preventDefault();
-    if (!tempProfile.name.trim()) {
-      setProfileError("Nama tidak boleh kosong.");
-      return;
-    }
-    setProfileError("");
-    const updatedUser = { ...currentUser, realName: tempProfile.name, diet: tempProfile.diet || 'Tidak ada', needs: tempProfile.needs || 'Tidak ada' };
-    setCurrentUser(updatedUser);
-    setSurveyStep(1); 
-    if (authUser && !isDemoMode) {
-      const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', currentUser.id);
-      await setDoc(docRef, updatedUser, { merge: true });
-    }
-  };
-
-  const handleAnswer = (questionId, tags) => {
-    setCurrentAnswers(prev => ({ ...prev, [questionId]: tags }));
-    if (surveyStep < QUESTIONS.length) { setSurveyStep(prev => prev + 1); } 
-    else { finishSurvey(tags, questionId); }
-  };
-
-  const finishSurvey = async (lastTags, lastQuestionId) => {
-    const allAnswers = { ...currentAnswers, [lastQuestionId]: lastTags };
-    let calculatedTags = [];
-    Object.values(allAnswers).forEach(tags => calculatedTags = [...calculatedTags, ...(tags || [])]);
-    const uniqueTags = [...new Set(calculatedTags)];
-    const finalUserData = { ...currentUser, hasCompletedSurvey: true, interests: uniqueTags };
-    setCurrentUser(finalUserData);
-    if (authUser && !isDemoMode) {
-      const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', currentUser.id);
-      await setDoc(docRef, finalUserData, { merge: true });
-    }
-  };
-
-  const toggleTask = async (taskId) => {
-    if (currentUser?.role === 'admin' || !authUser) return;
-    const currentTasks = currentUser?.checkedTasks || [];
-    const isChecked = currentTasks.includes(taskId);
-    let newTasks = isChecked ? currentTasks.filter(id => id !== taskId) : [...currentTasks, taskId];
-    const updatedUser = { ...currentUser, checkedTasks: newTasks };
-    setCurrentUser(updatedUser);
-    if (!isDemoMode) {
-      const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', currentUser.id);
-      await updateDoc(docRef, { checkedTasks: newTasks });
-    }
-  };
-
-  const executeAction = async () => {
-    if (!modalConfig.user || !authUser) return;
-    const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', modalConfig.user.id);
-    if (modalConfig.type === 'delete') {
-      if (!isDemoMode) await deleteDoc(userRef);
-    } else if (modalConfig.type === 'reset') {
-      if (!isDemoMode) await updateDoc(userRef, { hasCompletedSurvey: false, interests: [], diet: '', needs: '', checkedTasks: [] });
-    }
-    setModalConfig({ isOpen: false, type: '', user: null });
-  };
-
-  const handleSaveActivity = async (e) => {
-    e.preventDefault();
-    if (!authUser) return;
-    const newItinerary = [...(itinerary || [])];
-    if(newItinerary[editingAct.dayIdx] && newItinerary[editingAct.dayIdx].activities) {
-        newItinerary[editingAct.dayIdx].activities[editingAct.actIdx] = editingAct.data;
-    }
-    if (!isDemoMode) {
-      const masterItineraryRef = doc(db, 'artifacts', appId, 'public', 'data', 'app_state', 'master_itinerary');
-      await setDoc(masterItineraryRef, { data: newItinerary });
-    } else {
-      setItinerary(newItinerary);
-    }
-    setEditingAct(null);
-  };
-
-  const ActivityCard = ({ act, dayIdx, actIdx, match, isAdmin }) => {
-    if (!act) return null;
-    const userTasks = currentUser?.checkedTasks || [];
-    const allChecked = (act.todo && act.todo.length > 0) ? act.todo.every((_, idx) => userTasks.includes(`${act.id}_t${idx}`)) : false;
-    const personalizedInsight = getPersonalizedInsights(act.id, currentUser?.interests || []);
-    const souvenirs = SOUVENIR_RECOMMENDATIONS[act.id];
-
-    return (
-      <div className="relative pl-5 pb-6" id={`act-${act.id}`}>
-        <div className="absolute left-[9px] top-6 bottom-0 w-0.5 bg-blue-200"></div>
-        <div className={`absolute left-0 top-1.5 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm z-10 ${allChecked && !isAdmin ? 'bg-green-500' : 'bg-blue-600'}`}>
-           {allChecked && !isAdmin ? <CheckCircle className="w-2.5 h-2.5 text-white" /> : <Clock className="w-2.5 h-2.5 text-white" />}
+    <!-- VIEW: LOGIN -->
+    <div id="view-login" class="view-container flex-col min-h-screen relative bg-gray-900">
+        <div class="absolute inset-0 w-full h-full opacity-40">
+            <img src="https://images.unsplash.com/photo-1584646098378-0874589d76b1?w=800&q=80" alt="Background" class="w-full h-full object-cover" />
         </div>
-
-        <div className={`rounded-2xl overflow-hidden shadow-lg transition-all duration-300 bg-white border ${match ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-100'}`}>
-          
-          <div className="relative w-full aspect-video group cursor-pointer overflow-hidden rounded-t-2xl bg-gray-100">
-            <ActivityImage location={act.location} desc={act.desc} defaultImage={act.thumbnail} />
-            <div className="absolute inset-0 bg-gradient-to-br from-[#ff8c46]/85 to-[#1a5380]/95 opacity-60 mix-blend-multiply transition-opacity duration-300 group-hover:opacity-70"></div>
-            <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end">
-              <div className="flex justify-between items-end">
-                <div>
-                  <span className="text-orange-300 font-extrabold text-sm mb-1 block drop-shadow-md">{act.time}</span>
-                  <h3 className="text-white text-lg font-bold leading-tight drop-shadow-md">{act.desc}</h3>
-                </div>
-                {isAdmin && (
-                  <button onClick={() => setEditingAct({ dayIdx, actIdx, data: { ...act } })} className="bg-white/20 p-2 rounded-lg backdrop-blur-sm text-white hover:bg-white/40 shadow-sm transition-colors">
-                    <Edit3 className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
+        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+        
+        <div class="m-auto bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm text-center relative z-10 mx-4">
+            <div class="bg-blue-600 w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <i data-lucide="map-pin" class="text-white w-7 h-7"></i>
             </div>
-          </div>
-
-          <div className="p-4">
-            {match && <div className="mb-3"><span className="inline-block bg-blue-600 text-white text-[10px] px-2 py-1 rounded font-bold shadow-sm">Rekomendasi Untukmu</span></div>}
+            <h1 class="text-2xl font-extrabold text-gray-900 mb-1">Trip Planner</h1>
+            <p class="text-blue-600 font-bold text-xs uppercase tracking-widest mb-6">Edisi Malaysia</p>
             
-            <div className="flex flex-wrap gap-2 mb-4">
-              {(act.tags || []).map((tag, tIdx) => (<span key={tIdx} className="text-[10px] md:text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-md font-bold border border-gray-200">{formatTag(tag)}</span>))}
-            </div>
-
-            {(personalizedInsight || act.insight) && (
-              <div className="mb-4 bg-blue-50 p-3 rounded-xl border border-blue-100 text-xs md:text-sm text-blue-900 shadow-sm">
-                <Compass className="w-4 h-4 inline-block mr-1 mb-0.5 text-blue-600" />
-                <span className="font-bold">Info Spesial:</span> {personalizedInsight || act.insight}
-              </div>
-            )}
-
-            {souvenirs && (
-              <div className="mb-4 bg-pink-50 p-3 rounded-xl border border-pink-100 text-xs md:text-sm text-pink-900 shadow-sm">
-                <div className="flex items-center mb-2">
-                  <ShoppingBag className="w-4 h-4 mr-2 text-pink-600" />
-                  <span className="font-bold">Rekomendasi Oleh-oleh:</span>
-                </div>
-                <ul className="list-disc pl-6 space-y-1">
-                  {(souvenirs || []).map((item, idx) => (
-                    <li key={idx} className="font-medium text-pink-800">{item}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {act.location && (
-              <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(act.location)}`} target="_blank" rel="noopener noreferrer" className="mb-4 flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 active:bg-gray-200 transition-colors">
-                <span className="flex items-center gap-2"><MapPin className="w-4 h-4 text-red-500" /> Buka Peta {act.location.split(',')[0]}</span>
-                <ExternalLink className="w-4 h-4 text-gray-400" />
-              </a>
-            )}
-
-            {act.info && (
-              <div className="flex mb-4 bg-yellow-50 p-3 rounded-xl border border-yellow-100 text-xs md:text-sm text-yellow-800">
-                <Info className="w-4 h-4 mr-2 flex-shrink-0 text-yellow-600" /><p>{act.info}</p>
-              </div>
-            )}
-
-            {act.todo && act.todo.length > 0 && !isAdmin && (
-              <div className="space-y-2 mt-2">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Daftar Kegiatan:</p>
-                {(act.todo || []).map((task, idx) => {
-                  const taskId = `${act.id}_t${idx}`;
-                  const isChecked = userTasks.includes(taskId);
-                  const canEdit = currentUser?.role === 'user';
-                  
-                  return (
-                    <label key={idx} className={`flex items-start gap-3 p-2 rounded-lg transition-colors cursor-pointer ${isChecked ? 'bg-green-50' : 'active:bg-gray-50'}`}>
-                      <input type="checkbox" checked={isChecked} onChange={() => toggleTask(taskId)} disabled={!canEdit} className="mt-0.5 w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                      <span className={`text-xs leading-tight mt-1 ${isChecked ? 'line-through text-gray-400' : 'text-gray-700 font-bold'}`}>{task}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+            <form onsubmit="window.handleLoginSubmit(event)" class="space-y-4">
+                <input type="text" id="login-name" class="w-full p-4 border border-gray-200 bg-gray-50 rounded-xl text-base text-center font-bold outline-none focus:border-blue-500" placeholder="Ketik nama Kamu..." required />
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl active:bg-blue-700 shadow-md text-sm">Masuk Eksplorasi</button>
+            </form>
+            <button onclick="window.showAdminModal(true)" class="mt-6 text-xs text-gray-400 font-bold active:text-gray-800 py-2 px-4">Login Admin</button>
         </div>
-      </div>
-    );
-  };
+    </div>
 
-  const LiveTripStatus = () => {
-    let currentAct = null;
-    let nextAct = null;
-    let status = 'PRE-TRIP';
+    <!-- ADMIN MODAL -->
+    <div id="modal-admin" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-xs shadow-2xl">
+            <h3 class="text-lg font-extrabold text-gray-900 mb-4">Akses Admin</h3>
+            <form onsubmit="window.handleAdminSubmit(event)">
+                <input type="password" id="admin-password" class="w-full p-3 border border-gray-200 rounded-xl mb-2 text-base outline-none focus:border-blue-500" placeholder="Sandi... (admin123)" required />
+                <p id="admin-error" class="text-red-500 text-xs mb-4 font-bold hidden"></p>
+                <div class="flex gap-2 justify-end mt-4">
+                    <button type="button" onclick="window.showAdminModal(false)" class="px-4 py-2.5 text-gray-600 bg-gray-100 rounded-xl font-bold text-sm">Batal</button>
+                    <button type="submit" class="px-4 py-2.5 text-white bg-blue-600 rounded-xl font-bold text-sm">Masuk</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-    if (flatSchedule.length > 0) {
-      if (now < flatSchedule[0].datetime) {
-        status = 'PRE-TRIP';
-        nextAct = flatSchedule[0];
-      } else if (now > flatSchedule[flatSchedule.length - 1].datetime) {
-        status = 'POST-TRIP';
-      } else {
-        status = 'ON-TRIP';
-        for (let i = 0; i < flatSchedule.length; i++) {
-          if (now >= flatSchedule[i].datetime && (!flatSchedule[i+1] || now < flatSchedule[i+1].datetime)) {
-            currentAct = flatSchedule[i];
-            nextAct = flatSchedule[i+1] || null;
-            break;
-          }
+    <!-- VIEW: SURVEY PROFILE -->
+    <div id="view-profile" class="view-container flex-col min-h-screen p-4">
+        <header class="flex justify-between items-center mb-6 bg-white p-4 rounded-2xl shadow-sm max-w-sm mx-auto w-full">
+            <h1 class="text-lg font-extrabold text-gray-800 flex items-center"><i data-lucide="check-square" class="w-5 h-5 mr-2 text-blue-600"></i> Data Diri</h1>
+            <button onclick="window.handleLogout()" class="text-gray-400 active:text-red-500 bg-gray-50 p-2 rounded-full"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+        </header>
+        <form onsubmit="window.handleProfileSubmit(event)" class="flex-1 flex flex-col w-full max-w-sm mx-auto">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-5">
+                <div id="profile-error" class="bg-red-50 text-red-600 p-3 rounded-lg text-xs font-bold hidden"></div>
+                <div><label class="block text-xs font-bold text-gray-500 uppercase mb-2">Nama Panggilan</label><input type="text" id="profile-name" class="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500" placeholder="Nama Kamu"/></div>
+                <div><label class="block text-xs font-bold text-gray-500 uppercase mb-2">Alergi Makanan</label><input type="text" id="profile-diet" class="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500" placeholder="Kosongkan jika aman"/></div>
+                <div><label class="block text-xs font-bold text-gray-500 uppercase mb-2">Kebutuhan Khusus</label><textarea id="profile-needs" class="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500 min-h-[80px]" placeholder="Mudah mabuk, dsb."></textarea></div>
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl active:bg-blue-700 shadow-md text-sm mt-2">Lanjut Kuesioner</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- VIEW: SURVEY QUESTIONS -->
+    <div id="view-survey" class="view-container flex-col min-h-screen p-4">
+        <header class="flex justify-between items-center mb-6 bg-white p-4 rounded-2xl shadow-sm max-w-sm mx-auto w-full">
+            <h1 class="text-lg font-extrabold text-gray-800">Kuesioner</h1>
+            <button onclick="window.handleLogout()" class="text-gray-400 active:text-red-500 bg-gray-50 p-2 rounded-full"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+        </header>
+        <div class="flex-1 flex flex-col w-full max-w-sm mx-auto" id="survey-content">
+            <!-- Rendered by JS -->
+        </div>
+    </div>
+
+    <!-- VIEW: USER DASHBOARD -->
+    <div id="view-dashboard" class="view-container active-block min-h-screen pb-24 relative">
+        <div class="relative h-48 bg-gray-900 rounded-b-[2rem] shadow-sm overflow-hidden">
+            <div class="absolute inset-0 w-full h-full opacity-40">
+                <img src="https://images.unsplash.com/photo-1584646098378-0874589d76b1?w=800&q=80" alt="Background" class="w-full h-full object-cover" />
+            </div>
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+            <div class="absolute top-4 right-4">
+                <button onclick="window.handleLogout()" class="bg-white/20 p-2 rounded-full text-white"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+            </div>
+            <div class="absolute bottom-5 left-5 right-5">
+                <h1 class="text-2xl font-extrabold text-white mb-1">Trip Malaysia</h1>
+                <p id="dash-user-name" class="text-gray-300 text-xs font-bold uppercase tracking-widest"></p>
+            </div>
+        </div>
+        
+        <div class="max-w-md mx-auto w-full" id="dashboard-content">
+            <!-- Rendered by JS based on Active Tab -->
+        </div>
+
+        <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around p-2 pb-safe z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]" id="bottom-nav">
+            <!-- Rendered by JS -->
+        </div>
+    </div>
+
+    <!-- VIEW: ADMIN DASHBOARD -->
+    <div id="view-admin" class="view-container active-block min-h-screen pb-20 bg-gray-50">
+        <div class="bg-blue-700 text-white p-5 rounded-b-[2rem] shadow-md sticky top-0 z-40">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-xl font-extrabold">Pusat Komando</h1>
+                <button onclick="window.handleLogout()" class="bg-white/20 p-2 rounded-full"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+            </div>
+            <div class="flex bg-blue-800 rounded-xl p-1 gap-1 overflow-x-auto hide-scrollbar" id="admin-nav">
+                <!-- Rendered by JS -->
+            </div>
+        </div>
+        
+        <div class="max-w-4xl mx-auto px-4 mt-6">
+            <div id="admin-demo-warning" class="bg-yellow-100 border-l-4 border-yellow-500 p-4 rounded-r-xl mb-6 shadow-sm hidden">
+                <h3 class="font-bold text-yellow-800 text-sm mb-1">Mode Uji Coba</h3>
+                <p class="text-xs text-yellow-700">Aplikasi belum terhubung ke Firebase.</p>
+            </div>
+            <div id="admin-content">
+                <!-- Rendered by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ACTION MODAL (Reset/Delete) -->
+    <div id="modal-action" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-xs shadow-2xl">
+            <h3 class="text-lg font-extrabold text-gray-900 mb-2">Konfirmasi</h3>
+            <p id="action-desc" class="text-gray-600 mb-6 text-sm font-medium"></p>
+            <div class="flex gap-2 justify-end">
+                <button onclick="window.closeActionModal()" class="px-4 py-2 text-gray-700 bg-gray-100 rounded-xl font-bold text-sm">Batal</button>
+                <button id="action-confirm-btn" onclick="window.executeAction()" class="px-4 py-2 text-white rounded-xl font-bold text-sm">Ya, Lanjut</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT ACTIVITY MODAL -->
+    <div id="modal-edit-act" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h3 class="text-lg font-extrabold text-gray-900 mb-4">Edit Aktivitas</h3>
+            <form onsubmit="window.handleSaveActivity(event)" class="space-y-4">
+                <div><label class="text-xs font-bold text-gray-500 uppercase">Jam</label><input type="time" id="edit-act-time" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold mt-1" required/></div>
+                <div><label class="text-xs font-bold text-gray-500 uppercase">Deskripsi</label><input type="text" id="edit-act-desc" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold mt-1" required/></div>
+                <div><label class="text-xs font-bold text-gray-500 uppercase">URL Gambar</label><input type="text" id="edit-act-thumb" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold mt-1" required/></div>
+                <div><label class="text-xs font-bold text-gray-500 uppercase">Lokasi Peta</label><input type="text" id="edit-act-loc" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold mt-1"/></div>
+                <div><label class="text-xs font-bold text-gray-500 uppercase">Info Spesial</label><input type="text" id="edit-act-info" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold mt-1"/></div>
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="window.closeEditModal()" class="flex-1 py-3 text-gray-600 bg-gray-100 rounded-xl font-bold text-sm">Batal</button>
+                    <button type="submit" class="flex-1 py-3 text-white bg-blue-600 rounded-xl font-bold text-sm">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+        // --- CONSTANTS & DATA ---
+        const GOOGLE_PLACES_API_KEY = ""; 
+        const DATE_MAP = { '30 April': '2026-04-30', '1 Mei': '2026-05-01', '2 Mei': '2026-05-02', '3 Mei': '2026-05-03', '4 Mei': '2026-05-04' };
+
+        const QUESTIONS = [
+            { id: 'q1', text: 'Apa tujuan utama kamu ikut trip ini?', options: [{ text: 'Berburu spot foto estetik', tags: ['foto'] }, { text: 'Mencicipi makanan lokal', tags: ['kuliner'] }, { text: 'Belanja dan cari barang unik', tags: ['belanja_murah', 'belanja_branded'] }] },
+            { id: 'q2', text: 'Gaya belanja seperti apa yang kamu suka?', options: [{ text: 'Barang branded dan baju di Mall', tags: ['belanja_branded'] }, { text: 'Oleh-oleh murah, cokelat, dan pernak-pernik', tags: ['belanja_murah', 'oleh_oleh'] }, { text: 'Tidak terlalu suka belanja, mending jalan-jalan', tags: ['foto', 'santai'] }] },
+            { id: 'q3', text: 'Di malam hari, kegiatan apa yang paling kamu tunggu?', options: [{ text: 'Keliling cari street food dan ngemil', tags: ['kuliner'] }, { text: 'Jalan di area gemerlap kota untuk foto', tags: ['foto'] }, { text: 'Istirahat santai di hotel', tags: ['santai'] }] },
+            { id: 'q4', text: 'Pilih spot foto favorit kamu!', options: [{ text: 'Bangunan bersejarah & budaya', tags: ['foto_budaya'] }, { text: 'Gedung pencakar langit modern', tags: ['foto_modern'] }, { text: 'Pemandangan alam / danau', tags: ['foto_alam'] }] },
+            { id: 'q5', text: 'Preferensi makan siang saat di tempat wisata?', options: [{ text: 'Cari paket hemat yang penting kenyang & halal', tags: ['kuliner_hemat'] }, { text: 'Coba restoran terkenal meski agak mahal', tags: ['kuliner'] }, { text: 'Ikut rombongan saja', tags: ['santai'] }] },
+            { id: 'q6', text: 'Target utama barang yang mau dibeli?', options: [{ text: 'Sepatu dan Baju', tags: ['belanja_branded'] }, { text: 'Cokelat dan makanan ringan', tags: ['oleh_oleh'] }, { text: 'Magnet kulkas dan suvenir kecil', tags: ['belanja_murah'] }] }
+        ];
+
+        const PERSONALIZED_INSIGHTS = {
+            'd1_a2': { 'foto': 'Ambil foto dari kolam Lake Symphony.', 'kuliner': 'Area KLCC punya banyak kafe dan restoran.', 'belanja_branded': 'Suria KLCC tepat di bawah menara ini.', 'santai': 'Duduk santai di taman KLCC.' },
+            'd1_a4': { 'foto': 'Persimpangan jalan dengan lampu neon besar adalah spot foto urban terbaik.', 'kuliner': 'Jalan Alor memiliki banyak jajanan street food.', 'belanja_branded': 'Kawasan ini dipenuhi mall premium.', 'belanja_murah': 'Sungei Wang Plaza punya banyak pilihan pakaian.', 'santai': 'Nikmati pertunjukan musisi jalanan.' },
+            'd2_a1': { 'foto': 'Tangga warna-warni sangat fotogenik.', 'kuliner': 'Coba teh tarik asli di kedai dekat pintu masuk.', 'santai': 'Fokus pada arsitektur luar.' },
+            'd2_a2': { 'kuliner': 'Nikmati inovasi cokelat rasa buah-buahan lokal.', 'belanja_murah': 'Beli paket bundling agar lebih hemat.', 'oleh_oleh': 'Pilihan cokelat durian sangat populer.' },
+            'd2_a3': { 'foto': 'Kawasan ini memiliki mural dan bangunan kuno.', 'kuliner': 'Banyak kopi tradisional dan camilan lokal.', 'belanja_murah': 'Tempat terbaik menawar suvenir.', 'oleh_oleh': 'Magnet kulkas dijual murah di sini.' },
+            'd3_a1': { 'foto': 'Tangkap lanskap kota dari ketinggian.', 'santai': 'Nikmati pemandangan tanpa hambatan.' },
+            'd3_a2': { 'foto': 'Dinding bata bangunan Sultan Abdul Samad menyajikan kontras brilian.', 'foto_budaya': 'Area ini penuh dengan arsitektur bersejarah.', 'santai': 'Duduk santai di lapangan rumput.' },
+            'd3_a3': { 'foto': 'Desain arsitektur masjid sangat indah di sore hari.', 'foto_budaya': 'Pelajari sejarah perpaduan arsitektur Moor.', 'santai': 'Rasakan suasana tenang di pinggir sungai.' },
+            'd3_a4': { 'belanja_branded': 'Kunjungi butik desainer internasional.', 'kuliner': 'Banyak pilihan restoran premium di dalam mall.', 'foto_modern': 'Interior mall sangat mewah dan modern.' },
+            'd4_a1': { 'foto': 'Masjid Pink memberikan ilusi foto ala Timur Tengah.', 'foto_alam': 'Danau buatan Putrajaya sangat luas dan jernih.', 'santai': 'Kawasan ini sangat tertata dan rapi.' },
+            'd4_a2': { 'belanja_murah': 'Tempat terbaik mencari kerajinan tangan lokal.', 'oleh_oleh': 'Beli batik atau gantungan kunci di sini.', 'foto_budaya': 'Bangunan bergaya art deco yang indah.' }
+        };
+
+        const SOUVENIR_RECOMMENDATIONS = {
+            'd1_a4': ['Baju dan sepatu merek internasional', 'Aksesoris modis', 'Parfum branded'],
+            'd2_a2': ['Cokelat rasa Tiramisu', 'Cokelat isi Durian', 'Praline Almond kemasan kotak'],
+            'd2_a3': ['Kaos tulisan I Love KL', 'Magnet kulkas Menara Kembar', 'Gantungan kunci', 'Tas rajut lokal'],
+            'd3_a4': ['Pakaian merek internasional', 'Kosmetik', 'Barang elektronik'],
+            'd4_a2': ['Kain batik Malaysia', 'Kerajinan tangan kayu', 'Kartu pos vintage', 'Pernak-pernik seni']
+        };
+
+        const INITIAL_ITINERARY = [
+            { day: 1, date: '30 April', title: 'Kedatangan & Eksplorasi Pusat Kota', activities: [
+                { id: 'd1_a1', time: '13:00', desc: 'Penerbangan Bdj-Kul via AK441 & Landing KL.', tags: ['santai'], location: 'KLIA2', insight: 'Proses imigrasi dan pengambilan bagasi.', todo: ['Lolos imigrasi', 'Kumpul rombongan'], thumbnail: 'https://images.unsplash.com/photo-1569154941061-e231b4725ef1?w=800&q=80' },
+                { id: 'd1_a2', time: '15:00', desc: 'Petronas Twin Tower.', tags: ['foto', 'foto_modern'], location: 'Petronas Twin Towers', insight: 'Ikon utama Kuala Lumpur. Siapkan kamera untuk foto arsitektur.', todo: ['Foto berlatar menara kembar', 'Jalan santai di taman'], thumbnail: 'https://images.unsplash.com/photo-1584646098378-0874589d76b1?w=800&q=80' },
+                { id: 'd1_a3', time: '17:00', desc: 'Check-in Hotel Seeds Bukit Bintang.', tags: ['santai'], location: 'Seeds Hotel Bukit Bintang', insight: 'Istirahat sejenak setelah penerbangan.', todo: ['Terima kunci kamar', 'Mandi dan bersih-bersih', 'Isi ulang daya ponsel'], thumbnail: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=800&q=80' },
+                { id: 'd1_a4', time: '18:30', desc: 'Bukit Bintang Walkway & Alor Street.', tags: ['belanja_murah', 'kuliner', 'santai'], location: 'Bukit Bintang', insight: 'Nikmati suasana malam dan kuliner kaki lima.', todo: ['Jalan santai', 'Mencoba makanan jalanan', 'Makan malam'], thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Jalan_Alor_-_Kuala_Lumpur.jpg/960px-Jalan_Alor_-_Kuala_Lumpur.jpg?_=20170605205311' }
+            ]},
+            { day: 2, date: '1 Mei', title: 'Batu Caves & Perburuan Suvenir', activities: [
+                { id: 'd2_a1', time: '09:00', desc: 'Eksplorasi Batu Caves.', tags: ['foto_budaya', 'santai'], location: 'Batu Caves', insight: 'Kunjungi situs religius dengan patung raksasa dan tangga warna-warni.', todo: ['Foto patung emas', 'Daki 272 tangga'], thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Batu_Caves_stairs_2022-05.jpg/960px-Batu_Caves_stairs_2022-05.jpg' },
+                { id: 'd2_a2', time: '13:00', desc: 'Chocolate Boutique.', tags: ['oleh_oleh', 'kuliner'], location: 'Kuala Lumpur', insight: 'Pusat produksi cokelat lokal berkualitas.', todo: ['Mencicipi cokelat gratis', 'Beli oleh-oleh cokelat'], thumbnail: 'https://images.unsplash.com/photo-1548907040-4baa42d10919?w=800&q=80' },
+                { id: 'd2_a3', time: '15:30', desc: 'Petaling Street Market.', tags: ['belanja_murah', 'foto_budaya'], location: 'Petaling Street', insight: 'Pusat perbelanjaan pecinan untuk suvenir murah.', todo: ['Tawar menawar barang', 'Belanja suvenir'], thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/YosriMay2005JalanPetaling.JPG/960px-YosriMay2005JalanPetaling.JPG' }
+            ]},
+            { day: 3, date: '2 Mei', title: 'Kawasan Sejarah & Mal Premium', activities: [
+                { id: 'd3_a1', time: '09:00', desc: 'KL Tower.', tags: ['foto', 'foto_modern'], location: 'KL Tower', insight: 'Menara komunikasi dengan pemandangan kota 360 derajat.', todo: ['Naik ke observation deck', 'Foto pemandangan kota'], thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/d/d2/KLTowerDecember2020.jpg' },
+                { id: 'd3_a2', time: '11:00', desc: 'Dataran Merdeka.', tags: ['foto_budaya', 'foto'], location: 'Dataran Merdeka', insight: 'Alun-alun bersejarah dengan arsitektur memukau.', todo: ['Foto gedung bersejarah', 'Lihat tiang bendera tertinggi'], thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/1/16/Dataran_Merdeka_2.jpg' },
+                { id: 'd3_a3', time: '14:00', desc: 'Mesjid Jamek.', tags: ['foto_budaya', 'santai'], location: 'Masjid Jamek Kuala Lumpur', insight: 'Salah satu masjid tertua di KL dengan arsitektur Moorish.', todo: ['Mengagumi arsitektur masjid', 'Beristirahat sejenak'], thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Mosque_Jamek.jpg/960px-Mosque_Jamek.jpg' },
+                { id: 'd3_a4', time: '16:00', desc: 'KLCC Mall.', tags: ['belanja_branded', 'kuliner'], location: 'Suria KLCC', insight: 'Pusat perbelanjaan premium di kaki Menara Petronas.', todo: ['Belanja barang merek internasional', 'Mencari kafe untuk bersantai'], thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/aa/The_Twins_SE_Asia_2019_%2849171985716%29_%28Suria_KLCC%29.jpg/1920px-The_Twins_SE_Asia_2019_%2849171985716%29_%28Suria_KLCC%29.jpg' }
+            ]},
+            { day: 4, date: '3 Mei', title: 'Geometri Putrajaya & Pasar Seni', activities: [
+                { id: 'd4_a1', time: '09:00', desc: 'Dataran Putrajaya.', tags: ['foto_alam', 'foto_modern', 'foto_budaya'], location: 'Putrajaya', insight: 'Pusat administrasi dengan desain arsitektur yang megah.', todo: ['Foto Masjid Pink', 'Melihat pemandangan danau', 'Keliling area Putrajaya'], thumbnail: 'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?w=800&q=80' },
+                { id: 'd4_a2', time: '14:00', desc: 'Central Market.', tags: ['belanja_murah', 'oleh_oleh', 'foto_budaya'], location: 'Central Market Kuala Lumpur', insight: 'Pusat seni dan kerajinan tangan Malaysia.', todo: ['Belanja kerajinan tangan', 'Melihat karya seni lokal'], thumbnail: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?w=800&q=80' }
+            ]},
+            { day: 5, date: '4 Mei', title: 'Ekstraksi Dini Hari & Kepulangan', activities: [
+                { id: 'd5_a1', time: '02:00', desc: 'Check Out Hotel Seeds Bukit Bintang.', tags: ['santai'], location: 'Bukit Bintang', insight: 'Bersiap dini hari. Pastikan tidak ada barang tertinggal.', todo: ['Kumpul lobi', 'Cek dokumen'], thumbnail: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&q=80' },
+                { id: 'd5_a2', time: '03:00', desc: 'Dropping KLIA2 Airport.', tags: ['santai'], location: 'KLIA2', insight: 'Perjalanan malam hari menuju bandara.', todo: ['Tidur di perjalanan', 'Tiba di bandara'], thumbnail: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&q=80' },
+                { id: 'd5_a3', time: '07:15', desc: 'Flight KL-Bdj Via AK442.', tags: ['santai'], location: 'KLIA2', insight: 'Penerbangan kembali pulang.', todo: ['Proses imigrasi', 'Istirahat di pesawat'], thumbnail: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=800&q=80' }
+            ]}
+        ];
+
+        // --- FIREBASE INIT ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        let app, auth, db;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        
+        // --- GLOBAL STATE ---
+        const state = {
+            itinerary: INITIAL_ITINERARY,
+            participants: [],
+            authUser: null,
+            currentUser: null,
+            currentAnswers: {},
+            surveyStep: 0,
+            activeTab: 'jadwal',
+            adminTab: 'peserta',
+            selectedDay: null,
+            isDemoMode: true,
+            now: new Date('2026-04-30T12:00:00+08:00'),
+            flatSchedule: [],
+            modalConfig: { isOpen: false, type: '', user: null },
+            editingAct: null,
+            photoCache: {}
+        };
+
+        // --- INIT FIREBASE & STATE ---
+        async function init() {
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                state.isDemoMode = false;
+            } catch (error) {
+                console.error("Auth Error:", error);
+                state.isDemoMode = true;
+            }
+
+            if(auth) {
+                onAuthStateChanged(auth, (user) => {
+                    state.authUser = user;
+                    setupListeners();
+                    updateUI();
+                });
+            } else {
+                updateUI();
+            }
+
+            // Realtime clock
+            setInterval(() => {
+                state.now = new Date();
+                if(state.currentUser && state.currentUser.hasCompletedSurvey && state.activeTab === 'jadwal' && state.currentUser.role !== 'admin') {
+                    renderLiveTripStatus();
+                }
+            }, 60000);
         }
-      }
-    }
 
-    if (status === 'PRE-TRIP') {
-      return (
-        <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-4 mb-6 text-white shadow-md border border-blue-500 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-20"><Calendar className="w-16 h-16"/></div>
-          <h3 className="font-extrabold text-sm mb-1 flex items-center"><Navigation className="w-4 h-4 mr-2" /> Persiapan Keberangkatan</h3>
-          <p className="text-xs text-blue-100 font-medium">Perjalanan dimulai 30 April 2026. Persiapkan fisik dan dokumen Kamu.</p>
-        </div>
-      );
-    }
+        function setupListeners() {
+            if (!state.authUser) return;
 
-    if (status === 'POST-TRIP') {
-      return (
-         <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl p-4 mb-6 text-white shadow-md border border-green-500">
-          <h3 className="font-extrabold text-sm mb-1 flex items-center"><CheckCircle className="w-4 h-4 mr-2" /> Misi Selesai</h3>
-          <p className="text-xs text-green-100 font-medium">Seluruh rangkaian tur Malaysia diselesaikan dengan baik.</p>
-        </div>
-      );
-    }
+            const participantsRef = collection(db, 'artifacts', appId, 'public', 'data', 'participants');
+            onSnapshot(participantsRef, (snapshot) => {
+                state.participants = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                if (state.currentUser && state.currentUser.role !== 'admin') {
+                    const updatedUser = state.participants.find(u => u.id === state.currentUser.id);
+                    if (updatedUser) {
+                        state.currentUser = updatedUser;
+                        updateUI();
+                    }
+                } else if(state.currentUser && state.currentUser.role === 'admin') {
+                    if(state.adminTab === 'peserta') renderAdminPeserta();
+                }
+            }, (error) => console.error(error));
 
-    return (
-      <div className="bg-white rounded-2xl p-4 mb-6 shadow-md border border-blue-100 relative overflow-hidden">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center text-blue-600">
-            <div className="w-2.5 h-2.5 bg-blue-600 rounded-full mr-2 live-indicator"></div>
-            <span className="text-xs font-extrabold uppercase tracking-widest">Pelacak Waktu</span>
-          </div>
-          <span className="text-[10px] font-bold text-gray-400">{now.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</span>
-        </div>
-        
-        {currentAct && (
-          <div className="mb-3 border-l-2 border-blue-500 pl-3">
-            <p className="text-[10px] font-bold text-gray-400 uppercase">Saat Ini</p>
-            <p className="text-sm font-extrabold text-gray-900 leading-tight">{currentAct.desc}</p>
-            <p className="text-xs text-blue-600 font-bold flex items-center mt-1"><MapPin className="w-3 h-3 mr-1"/> {currentAct.location}</p>
-          </div>
-        )}
-        
-        {nextAct && (
-          <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 flex items-start">
-            <ArrowRight className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase">Berikutnya • {nextAct.time}</p>
-              <p className="text-xs font-bold text-gray-700">{nextAct.desc}</p>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
+            const masterItineraryRef = doc(db, 'artifacts', appId, 'public', 'data', 'app_state', 'master_itinerary');
+            onSnapshot(masterItineraryRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    state.itinerary = docSnap.data().data || INITIAL_ITINERARY;
+                } else {
+                    if(!state.isDemoMode) setDoc(masterItineraryRef, { data: INITIAL_ITINERARY });
+                    state.itinerary = INITIAL_ITINERARY;
+                }
+                buildFlatSchedule();
+                if(state.currentUser) updateUI();
+            });
+        }
 
-  const FilterHari = () => (
-    <div className="flex gap-2 overflow-x-auto hide-scrollbar py-2 mb-4 sticky top-0 bg-gray-50 z-30 border-b border-gray-200 px-4 -mx-4 shadow-sm">
-      <button onClick={() => setSelectedDay(null)} className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors border ${selectedDay === null ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-gray-600 border-gray-200 active:bg-gray-100'}`}>Semua Hari</button>
-      {[1, 2, 3, 4, 5].map(day => (
-        <button key={day} onClick={() => setSelectedDay(day)} className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors border ${selectedDay === day ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-gray-600 border-gray-200 active:bg-gray-100'}`}>Hari {day}</button>
-      ))}
-    </div>
-  );
+        function buildFlatSchedule() {
+            state.flatSchedule = [];
+            state.itinerary.forEach(day => {
+                const dateStr = DATE_MAP[day.date];
+                day.activities.forEach(act => {
+                    state.flatSchedule.push({ ...act, datetime: new Date(`${dateStr}T${act.time}:00+08:00`), dayTitle: day.title, dayDate: day.date });
+                });
+            });
+        }
 
-  const BottomNav = () => {
-    if (currentUser?.role === 'admin') return null; 
-    return (
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around p-2 pb-safe z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-        <button onClick={() => setActiveTab('jadwal')} className={`flex flex-col items-center p-2 w-16 ${activeTab === 'jadwal' ? 'text-blue-600' : 'text-gray-400'}`}><Calendar className="w-6 h-6" /><span className="text-[10px] font-bold mt-1">Jadwal</span></button>
-        <button onClick={() => setActiveTab('peta')} className={`flex flex-col items-center p-2 w-16 ${activeTab === 'peta' ? 'text-blue-600' : 'text-gray-400'}`}><MapIcon className="w-6 h-6" /><span className="text-[10px] font-bold mt-1">Peta</span></button>
-        <button onClick={() => setActiveTab('profil')} className={`flex flex-col items-center p-2 w-16 ${activeTab === 'profil' ? 'text-blue-600' : 'text-gray-400'}`}><User className="w-6 h-6" /><span className="text-[10px] font-bold mt-1">Profil</span></button>
-        <button onClick={() => setActiveTab('info')} className={`flex flex-col items-center p-2 w-16 ${activeTab === 'info' ? 'text-blue-600' : 'text-gray-400'}`}><Info className="w-6 h-6" /><span className="text-[10px] font-bold mt-1">Info</span></button>
-      </div>
-    );
-  };
+        // --- HELPER FUNCTIONS ---
+        const getTagEmoji = (tag) => {
+            if (tag.includes('kuliner')) return '🍽️ ';
+            if (tag.includes('foto')) return '📸 ';
+            if (tag.includes('belanja') || tag.includes('oleh')) return '🛍️ ';
+            return '🍃 ';
+        };
 
-  if (!currentUser) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-900 relative">
-        <div className="absolute inset-0 w-full h-full opacity-40">
-           <img src="https://images.unsplash.com/photo-1584646098378-0874589d76b1?w=800&q=80" alt="Background" className="w-full h-full object-cover" />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-        
-        <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm text-center relative z-10">
-          <div className="bg-blue-600 w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg"><MapPin className="text-white w-7 h-7" /></div>
-          <h1 className="text-2xl font-extrabold text-gray-900 mb-1">Trip Planner</h1>
-          <p className="text-blue-600 font-bold text-xs uppercase tracking-widest mb-6">Edisi Malaysia</p>
-          <form onSubmit={handleLoginSubmit} className="space-y-4">
-            <input type="text" value={loginName} onChange={(e) => setLoginName(e.target.value)} className="w-full p-4 border border-gray-200 bg-gray-50 rounded-xl text-base text-center font-bold outline-none focus:border-blue-500" placeholder="Ketik nama Kamu..." required />
-            <button type="submit" className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl active:bg-blue-700 shadow-md text-sm">Masuk Eksplorasi</button>
-          </form>
-          <button onClick={() => setShowAdminModal(true)} className="mt-6 text-xs text-gray-400 font-bold active:text-gray-800 py-2 px-4">Login Admin</button>
-        </div>
+        const formatTag = (tag) => getTagEmoji(tag) + tag.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
 
-        {showAdminModal && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-xs shadow-2xl">
-              <h3 className="text-lg font-extrabold text-gray-900 mb-4">Akses Admin</h3>
-              <form onSubmit={handleAdminSubmit}>
-                <input type="password" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} className="w-full p-3 border border-gray-200 rounded-xl mb-2 text-base outline-none focus:border-blue-500" placeholder="Sandi... (ketik: admin123)" required />
-                {adminError && <p className="text-red-500 text-xs mb-4 font-bold">{adminError}</p>}
-                <div className="flex gap-2 justify-end mt-4">
-                  <button type="button" onClick={() => {setShowAdminModal(false); setAdminError(''); setAdminPassword('');}} className="px-4 py-2.5 text-gray-600 bg-gray-100 rounded-xl font-bold text-sm">Batal</button>
-                  <button type="submit" className="px-4 py-2.5 text-white bg-blue-600 rounded-xl font-bold text-sm">Masuk</button>
+        const getPersonalizedInsights = (actId, userInterests) => {
+            const insightsForAct = PERSONALIZED_INSIGHTS[actId];
+            if (!insightsForAct || !userInterests || userInterests.length === 0) return null;
+            for (const interest of userInterests) {
+                if (insightsForAct[interest]) return insightsForAct[interest];
+                const partial = Object.keys(insightsForAct).find(k => interest.includes(k) || k.includes(interest));
+                if (partial) return insightsForAct[partial];
+            }
+            return null;
+        };
+
+        const isRecommended = (activityTags, userInterests) => {
+            if (!userInterests || userInterests.length === 0) return false;
+            if (userInterests.includes('semua')) return true;
+            return (activityTags || []).some(tag => userInterests.includes(tag));
+        };
+
+        // Google Places API Loader
+        let isGoogleMapsLoading = false;
+        let isGoogleMapsLoaded = false;
+        function loadGooglePlaces(callback) {
+            if (isGoogleMapsLoaded) { callback(); return; }
+            if (isGoogleMapsLoading) { setTimeout(() => loadGooglePlaces(callback), 500); return; }
+            if (!GOOGLE_PLACES_API_KEY) return;
+            
+            isGoogleMapsLoading = true;
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_PLACES_API_KEY}&libraries=places`;
+            script.async = true;
+            script.defer = true;
+            script.onload = () => { isGoogleMapsLoaded = true; callback(); };
+            document.head.appendChild(script);
+        }
+
+        window.triggerImageLoad = (imgId, location) => {
+            if(!GOOGLE_PLACES_API_KEY) return;
+            if(state.photoCache[location]) {
+                const el = document.getElementById(imgId);
+                if(el && state.photoCache[location] !== 'error') el.src = state.photoCache[location];
+                return;
+            }
+            loadGooglePlaces(() => {
+                if(state.photoCache[location]) return;
+                const service = new window.google.maps.places.PlacesService(document.createElement('div'));
+                service.textSearch({ query: location + ' Malaysia' }, (results, status) => {
+                    if (status === window.google.maps.places.PlacesServiceStatus.OK && results[0] && results[0].photos) {
+                        const url = results[0].photos[0].getUrl({ maxWidth: 800 });
+                        state.photoCache[location] = url;
+                        const el = document.getElementById(imgId);
+                        if(el) el.src = url;
+                    } else {
+                        state.photoCache[location] = 'error';
+                    }
+                });
+            });
+        };
+
+        // --- ACTIONS (Exposed to window) ---
+        window.handleLoginSubmit = async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('login-name').value.trim();
+            if (!name) return;
+
+            let user = state.participants.find(u => u.name.toLowerCase() === name.toLowerCase() || u.realName?.toLowerCase() === name.toLowerCase());
+            if (!user) {
+                const newId = 'u_' + Date.now();
+                user = { id: newId, name: name, realName: name, role: 'user', hasCompletedSurvey: false, interests: [], diet: '', needs: '', checkedTasks: [] };
+                if (state.authUser && !state.isDemoMode) {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'participants', newId), user);
+                } else {
+                    state.participants.push(user);
+                }
+            }
+            state.currentUser = user;
+            state.surveyStep = 0;
+            state.currentAnswers = {};
+            state.activeTab = 'jadwal';
+            state.selectedDay = null;
+            updateUI();
+        };
+
+        window.showAdminModal = (show) => {
+            document.getElementById('modal-admin').classList.toggle('hidden', !show);
+            if(!show) document.getElementById('admin-error').classList.add('hidden');
+        };
+
+        window.handleAdminSubmit = (e) => {
+            e.preventDefault();
+            const pwd = document.getElementById('admin-password').value;
+            if (pwd === "admin123") {
+                state.currentUser = { id: 'admin', name: 'Alhamdi', role: 'admin' };
+                window.showAdminModal(false);
+                state.adminTab = 'peserta';
+                updateUI();
+            } else {
+                const err = document.getElementById('admin-error');
+                err.textContent = "Password salah.";
+                err.classList.remove('hidden');
+            }
+        };
+
+        window.handleLogout = () => {
+            state.currentUser = null;
+            document.getElementById('login-name').value = '';
+            document.getElementById('admin-password').value = '';
+            updateUI();
+        };
+
+        window.handleProfileSubmit = async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('profile-name').value.trim();
+            const diet = document.getElementById('profile-diet').value.trim() || 'Tidak ada';
+            const needs = document.getElementById('profile-needs').value.trim() || 'Tidak ada';
+            const err = document.getElementById('profile-error');
+
+            if (!name) { err.textContent = "Nama tidak boleh kosong."; err.classList.remove('hidden'); return; }
+            err.classList.add('hidden');
+
+            state.currentUser = { ...state.currentUser, realName: name, diet, needs };
+            state.surveyStep = 1;
+            
+            if (state.authUser && !state.isDemoMode) {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'participants', state.currentUser.id), { realName: name, diet, needs });
+            }
+            updateUI();
+        };
+
+        window.handleAnswer = (qId, tagsStr) => {
+            const tags = JSON.parse(tagsStr);
+            state.currentAnswers[qId] = tags;
+            if (state.surveyStep < QUESTIONS.length) {
+                state.surveyStep++;
+                updateUI();
+            } else {
+                finishSurvey();
+            }
+        };
+
+        async function finishSurvey() {
+            let tags = [];
+            Object.values(state.currentAnswers).forEach(t => tags.push(...t));
+            const uniqueTags = [...new Set(tags)];
+            
+            state.currentUser = { ...state.currentUser, hasCompletedSurvey: true, interests: uniqueTags };
+            
+            if (state.authUser && !state.isDemoMode) {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'participants', state.currentUser.id), {
+                    hasCompletedSurvey: true, interests: uniqueTags
+                });
+            }
+            updateUI();
+        }
+
+        window.switchTab = (tab) => { state.activeTab = tab; updateUI(); };
+        window.switchAdminTab = (tab) => { state.adminTab = tab; updateUI(); };
+        window.filterDay = (day) => { state.selectedDay = day; updateUI(); };
+
+        window.toggleTask = async (taskId) => {
+            if (state.currentUser?.role === 'admin' || !state.authUser) return;
+            const currentTasks = state.currentUser.checkedTasks || [];
+            const isChecked = currentTasks.includes(taskId);
+            let newTasks = isChecked ? currentTasks.filter(id => id !== taskId) : [...currentTasks, taskId];
+            
+            state.currentUser.checkedTasks = newTasks;
+            if (!state.isDemoMode) {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'participants', state.currentUser.id), { checkedTasks: newTasks });
+            }
+            // Just re-render Jadwal
+            renderDashboardJadwal();
+        };
+
+        window.openActionModal = (type, userId) => {
+            const user = state.participants.find(u => u.id === userId);
+            state.modalConfig = { isOpen: true, type, user };
+            document.getElementById('action-desc').textContent = type === 'delete' ? `Hapus data ${user.realName || user.name}?` : `Reset kuesioner ${user.realName || user.name}?`;
+            document.getElementById('action-confirm-btn').className = `px-4 py-2 text-white rounded-xl font-bold text-sm ${type === 'delete' ? 'bg-red-600' : 'bg-yellow-500'}`;
+            document.getElementById('modal-action').classList.remove('hidden');
+        };
+
+        window.closeActionModal = () => {
+            state.modalConfig = { isOpen: false, type: '', user: null };
+            document.getElementById('modal-action').classList.add('hidden');
+        };
+
+        window.executeAction = async () => {
+            if (!state.modalConfig.user || !state.authUser) return;
+            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', state.modalConfig.user.id);
+            if (state.modalConfig.type === 'delete' && !state.isDemoMode) {
+                await deleteDoc(userRef);
+            } else if (state.modalConfig.type === 'reset' && !state.isDemoMode) {
+                await updateDoc(userRef, { hasCompletedSurvey: false, interests: [], diet: '', needs: '', checkedTasks: [] });
+            }
+            window.closeActionModal();
+        };
+
+        window.openEditModal = (dayIdx, actIdx) => {
+            const act = state.itinerary[dayIdx].activities[actIdx];
+            state.editingAct = { dayIdx, actIdx, data: { ...act } };
+            document.getElementById('edit-act-time').value = act.time;
+            document.getElementById('edit-act-desc').value = act.desc;
+            document.getElementById('edit-act-thumb').value = act.thumbnail;
+            document.getElementById('edit-act-loc').value = act.location || '';
+            document.getElementById('edit-act-info').value = act.info || '';
+            document.getElementById('modal-edit-act').classList.remove('hidden');
+        };
+
+        window.closeEditModal = () => {
+            state.editingAct = null;
+            document.getElementById('modal-edit-act').classList.add('hidden');
+        };
+
+        window.handleSaveActivity = async (e) => {
+            e.preventDefault();
+            if (!state.authUser) return;
+            const { dayIdx, actIdx, data } = state.editingAct;
+            data.time = document.getElementById('edit-act-time').value;
+            data.desc = document.getElementById('edit-act-desc').value;
+            data.thumbnail = document.getElementById('edit-act-thumb').value;
+            data.location = document.getElementById('edit-act-loc').value;
+            data.info = document.getElementById('edit-act-info').value;
+
+            const newItinerary = [...state.itinerary];
+            newItinerary[dayIdx].activities[actIdx] = data;
+
+            if (!state.isDemoMode) {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'app_state', 'master_itinerary'), { data: newItinerary });
+            } else {
+                state.itinerary = newItinerary;
+                updateUI();
+            }
+            window.closeEditModal();
+        };
+
+
+        // --- RENDER LOGIC ---
+        function switchView(viewId) {
+            document.querySelectorAll('.view-container').forEach(v => {
+                v.classList.remove('active', 'active-block');
+            });
+            const target = document.getElementById(viewId);
+            if(viewId === 'view-dashboard' || viewId === 'view-admin') {
+                target.classList.add('active-block');
+            } else {
+                target.classList.add('active');
+            }
+        }
+
+        function updateUI() {
+            buildFlatSchedule(); // Ensure schedule is ready
+
+            if (!state.currentUser) {
+                switchView('view-login');
+            } else if (state.currentUser.role === 'admin') {
+                switchView('view-admin');
+                renderAdminNav();
+                if(state.adminTab === 'peserta') renderAdminPeserta();
+                else if(state.adminTab === 'logistik') renderAdminLogistik();
+                else if(state.adminTab === 'editjadwal') renderAdminEditJadwal();
+                
+                const warn = document.getElementById('admin-demo-warning');
+                if(state.isDemoMode) warn.classList.remove('hidden');
+                else warn.classList.add('hidden');
+
+            } else if (!state.currentUser.hasCompletedSurvey) {
+                if (state.surveyStep === 0) {
+                    switchView('view-profile');
+                    document.getElementById('profile-name').value = state.currentUser.realName || state.currentUser.name || '';
+                    document.getElementById('profile-diet').value = state.currentUser.diet || '';
+                    document.getElementById('profile-needs').value = state.currentUser.needs || '';
+                } else {
+                    switchView('view-survey');
+                    renderSurveyQuestion();
+                }
+            } else {
+                switchView('view-dashboard');
+                document.getElementById('dash-user-name').textContent = state.currentUser.realName || state.currentUser.name;
+                renderBottomNav();
+                if (state.activeTab === 'jadwal') renderDashboardJadwal();
+                else if (state.activeTab === 'peta') renderDashboardPeta();
+                else if (state.activeTab === 'profil') renderDashboardProfil();
+                else if (state.activeTab === 'info') renderDashboardInfo();
+            }
+            
+            setTimeout(() => {
+                if(window.lucide) window.lucide.createIcons();
+            }, 50);
+        }
+
+        // --- COMPONENT RENDERERS (Returns HTML Strings) ---
+        function renderHotelVoucher() {
+            return `
+            <div class="bg-white border border-gray-200 p-5 rounded-3xl shadow-sm mb-6">
+                <h3 class="font-extrabold text-blue-800 flex items-center mb-4 text-base"><i data-lucide="file-text" class="w-5 h-5 mr-2"></i> Bukti Pemesanan Hotel</h3>
+                <div class="bg-blue-50 p-4 rounded-2xl mb-4 border border-blue-100">
+                    <p class="text-xs text-gray-500 font-bold uppercase mb-1">Booking ID</p>
+                    <p class="font-extrabold text-gray-900 text-lg tracking-widest">1329097433</p>
                 </div>
-              </form>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  if (currentUser?.role === 'user' && !currentUser?.hasCompletedSurvey) {
-    if (surveyStep === 0) {
-      return (
-        <div className="min-h-screen bg-gray-50 p-4 flex flex-col font-sans">
-          <header className="flex justify-between items-center mb-6 bg-white p-4 rounded-2xl shadow-sm">
-            <h1 className="text-lg font-extrabold text-gray-800 flex items-center"><CheckSquare className="w-5 h-5 mr-2 text-blue-600"/> Data Diri</h1>
-            <button onClick={handleLogout} className="text-gray-400 active:text-red-500 bg-gray-50 p-2 rounded-full"><LogOut className="w-5 h-5" /></button>
-          </header>
-          <form onSubmit={handleProfileSubmit} className="flex-1 flex flex-col w-full max-w-sm mx-auto">
-            <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-5">
-              {profileError && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-xs font-bold">{profileError}</div>}
-              <div><label className="block text-xs font-bold text-gray-500 uppercase mb-2">Nama Panggilan</label><input type="text" value={tempProfile.name} onChange={e => setTempProfile({...tempProfile, name: e.target.value})} className="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500" placeholder="Nama Kamu"/></div>
-              <div><label className="block text-xs font-bold text-gray-500 uppercase mb-2">Alergi Makanan</label><input type="text" value={tempProfile.diet} onChange={e => setTempProfile({...tempProfile, diet: e.target.value})} className="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500" placeholder="Kosongkan jika aman"/></div>
-              <div><label className="block text-xs font-bold text-gray-500 uppercase mb-2">Kebutuhan Khusus</label><textarea value={tempProfile.needs} onChange={e => setTempProfile({...tempProfile, needs: e.target.value})} className="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500 min-h-[80px]" placeholder="Mudah mabuk, dsb."></textarea></div>
-              <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl active:bg-blue-700 shadow-md text-sm mt-2">Lanjut Kuesioner</button>
-            </div>
-          </form>
-        </div>
-      );
-    }
-    const questionIndex = surveyStep - 1;
-    const question = QUESTIONS[questionIndex];
-    return (
-      <div className="min-h-screen bg-gray-50 p-4 flex flex-col font-sans">
-        <header className="flex justify-between items-center mb-6 bg-white p-4 rounded-2xl shadow-sm"><h1 className="text-lg font-extrabold text-gray-800">Kuesioner</h1><button onClick={handleLogout} className="text-gray-400 active:text-red-500 bg-gray-50 p-2 rounded-full"><LogOut className="w-5 h-5" /></button></header>
-        <div className="flex-1 flex flex-col w-full max-w-sm mx-auto">
-          <div className="mb-6 bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
-            <p className="text-[10px] text-blue-600 font-bold uppercase mb-2">Pertanyaan {questionIndex + 1} dari {QUESTIONS.length}</p>
-            <div className="w-full bg-gray-100 rounded-full h-1.5 mb-4"><div className="bg-blue-500 h-1.5 rounded-full transition-all" style={{ width: `${((questionIndex + 1) / QUESTIONS.length) * 100}%` }}></div></div>
-            <h2 className="text-xl font-extrabold text-gray-800 leading-snug">{question.text}</h2>
-          </div>
-          <div className="space-y-3">
-            {(question.options || []).map((option, idx) => (
-              <button key={idx} onClick={() => handleAnswer(question.id, option.tags)} className="w-full p-4 bg-white border border-gray-200 rounded-2xl text-left active:border-blue-500 active:bg-blue-50 font-bold text-gray-700 text-sm flex items-center justify-between shadow-sm"><span className="pr-4">{option.text}</span><ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" /></button>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const renderAdminContent = () => {
-    if (adminTab === 'peserta') {
-      return (
-        <div className="space-y-4">
-          <h2 className="text-lg font-extrabold text-gray-800 mb-4 flex items-center"><Users className="w-5 h-5 mr-2 text-blue-600" /> Monitor Pasukan</h2>
-          <div className="md:hidden space-y-4 mb-8">
-            {(participants || []).filter(u => u?.role !== 'admin').map(user => (
-              <div key={user.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                <div className="flex justify-between items-start mb-2">
-                  <span className="font-bold text-gray-800">{user.realName || user.name}</span>
-                  {user?.hasCompletedSurvey ? <span className="inline-flex items-center text-green-700 bg-green-50 px-2 py-1 rounded text-[10px] font-bold"><CheckCircle className="w-3 h-3 mr-1"/> Selesai</span> : <span className="text-gray-500 bg-gray-50 px-2 py-1 rounded text-[10px] font-bold">Menunggu</span>}
+                <div class="space-y-3 text-sm">
+                    <div>
+                        <p class="text-xs text-gray-500 font-bold uppercase">Nama Hotel</p>
+                        <p class="font-bold text-gray-800">Seeds Hotel Bukit Bintang</p>
+                        <p class="text-xs text-gray-600 mt-1">78, Jln Alor, Bukit Bintang, Kuala Lumpur, 55100</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 border-t border-gray-100 pt-3">
+                        <div><p class="text-xs text-gray-500 font-bold uppercase">Check-in</p><p class="font-bold text-gray-800 text-xs mt-1">30 Apr 2026<br/>15:00</p></div>
+                        <div><p class="text-xs text-gray-500 font-bold uppercase">Check-out</p><p class="font-bold text-gray-800 text-xs mt-1">04 Mei 2026<br/>12:30</p></div>
+                    </div>
+                    <div class="border-t border-gray-100 pt-3">
+                        <p class="text-xs text-gray-500 font-bold uppercase mb-2">Daftar Tamu (5 Kamar Twin)</p>
+                        <ul class="text-[11px] text-gray-700 space-y-1.5 font-medium list-disc pl-4">
+                            <li>Ria Tahfazona Subeli & Nanda Amelia</li>
+                            <li>Effrima Yanti & Rahmi Muthmainnah Rizami</li>
+                            <li>Dzaky Hasni Putera & Ario Pranoto</li>
+                            <li>Bahliani & Andra Orahim</li>
+                            <li>Hendra & Muhammad Aqbi Suharna</li>
+                        </ul>
+                    </div>
+                    <div class="bg-green-50 p-3 rounded-xl border border-green-100 mt-4 flex items-start">
+                        <i data-lucide="check-circle" class="w-4 h-4 text-green-600 mr-2 flex-shrink-0 mt-0.5"></i>
+                        <p class="text-xs text-green-800 font-bold leading-tight">Lunas. Termasuk 10 Sarapan & WiFi Gratis.</p>
+                    </div>
                 </div>
-                <div className="text-xs text-gray-600 mb-1"><span className="font-bold">Diet:</span> {user.diet || '-'}</div>
-                <div className="text-xs text-gray-600 mb-3"><span className="font-bold">Catatan:</span> {user.needs || '-'}</div>
-                <div className="flex flex-wrap gap-1 mb-4">{(user.interests || []).map((tag, i) => (<span key={i} className="bg-blue-50 text-blue-700 text-[10px] px-2 py-1 rounded font-bold border border-blue-100">{formatTag(tag)}</span>))}</div>
-                <div className="flex gap-2">
-                  <button onClick={() => setModalConfig({ isOpen: true, type: 'reset', user })} className="flex-1 py-2 bg-yellow-50 text-yellow-700 rounded-xl font-bold text-xs flex justify-center items-center"><RefreshCw className="w-3 h-3 mr-1"/> Reset</button>
-                  <button onClick={() => setModalConfig({ isOpen: true, type: 'delete', user })} className="flex-1 py-2 bg-red-50 text-red-700 rounded-xl font-bold text-xs flex justify-center items-center"><Trash2 className="w-3 h-3 mr-1"/> Hapus</button>
+            </div>`;
+        }
+
+        function renderActivityCard(act, dayIdx, actIdx, match, isAdmin) {
+            const userTasks = state.currentUser?.checkedTasks || [];
+            const allChecked = (act.todo && act.todo.length > 0) ? act.todo.every((_, idx) => userTasks.includes(`${act.id}_t${idx}`)) : false;
+            const personalizedInsight = getPersonalizedInsights(act.id, state.currentUser?.interests || []);
+            const souvenirs = SOUVENIR_RECOMMENDATIONS[act.id];
+            const imgId = `img-${act.id}`;
+
+            let tagsHtml = (act.tags || []).map(tag => `<span class="text-[10px] md:text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-md font-bold border border-gray-200">${formatTag(tag)}</span>`).join('');
+            
+            let insightHtml = (personalizedInsight || act.insight) ? `
+                <div class="mb-4 bg-blue-50 p-3 rounded-xl border border-blue-100 text-xs md:text-sm text-blue-900 shadow-sm">
+                    <i data-lucide="compass" class="w-4 h-4 inline-block mr-1 mb-0.5 text-blue-600"></i>
+                    <span class="font-bold">Info Spesial:</span> ${personalizedInsight || act.insight}
+                </div>` : '';
+
+            let souvenirHtml = souvenirs ? `
+                <div class="mb-4 bg-pink-50 p-3 rounded-xl border border-pink-100 text-xs md:text-sm text-pink-900 shadow-sm">
+                    <div class="flex items-center mb-2"><i data-lucide="shopping-bag" class="w-4 h-4 mr-2 text-pink-600"></i><span class="font-bold">Rekomendasi Oleh-oleh:</span></div>
+                    <ul class="list-disc pl-6 space-y-1">${souvenirs.map(s => `<li class="font-medium text-pink-800">${s}</li>`).join('')}</ul>
+                </div>` : '';
+
+            let mapHtml = act.location ? `
+                <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(act.location)}" target="_blank" rel="noopener noreferrer" class="mb-4 flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 active:bg-gray-200 transition-colors">
+                    <span class="flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-red-500"></i> Buka Peta ${act.location.split(',')[0]}</span>
+                    <i data-lucide="external-link" class="w-4 h-4 text-gray-400"></i>
+                </a>` : '';
+                
+            let infoHtml = act.info ? `
+                <div class="flex mb-4 bg-yellow-50 p-3 rounded-xl border border-yellow-100 text-xs md:text-sm text-yellow-800">
+                    <i data-lucide="info" class="w-4 h-4 mr-2 flex-shrink-0 text-yellow-600"></i><p>${act.info}</p>
+                </div>` : '';
+
+            let todoHtml = '';
+            if(act.todo && act.todo.length > 0 && !isAdmin) {
+                todoHtml = `<div class="space-y-2 mt-2"><p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Daftar Kegiatan:</p>`;
+                act.todo.forEach((task, idx) => {
+                    const taskId = `${act.id}_t${idx}`;
+                    const isChecked = userTasks.includes(taskId);
+                    todoHtml += `
+                        <label class="flex items-start gap-3 p-2 rounded-lg transition-colors cursor-pointer ${isChecked ? 'bg-green-50' : 'active:bg-gray-50'}">
+                            <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="window.toggleTask('${taskId}')" class="mt-0.5 w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                            <span class="text-xs leading-tight mt-1 ${isChecked ? 'line-through text-gray-400' : 'text-gray-700 font-bold'}">${task}</span>
+                        </label>`;
+                });
+                todoHtml += `</div>`;
+            }
+
+            let adminBtn = isAdmin ? `<button onclick="window.openEditModal(${dayIdx}, ${actIdx})" class="bg-white/20 p-2 rounded-lg backdrop-blur-sm text-white hover:bg-white/40 shadow-sm transition-colors"><i data-lucide="edit-3" class="w-4 h-4"></i></button>` : '';
+
+            // Async load image
+            setTimeout(() => window.triggerImageLoad(imgId, act.location), 100);
+
+            return `
+            <div class="relative pl-5 pb-6">
+                <div class="absolute left-[9px] top-6 bottom-0 w-0.5 bg-blue-200"></div>
+                <div class="absolute left-0 top-1.5 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm z-10 ${allChecked && !isAdmin ? 'bg-green-500' : 'bg-blue-600'}">
+                    <i data-lucide="${allChecked && !isAdmin ? 'check-circle' : 'clock'}" class="w-2.5 h-2.5 text-white"></i>
                 </div>
-              </div>
-            ))}
-            {(participants || []).filter(u => u?.role !== 'admin').length === 0 && <p className="text-center text-sm text-gray-400 font-bold py-4">Belum ada peserta.</p>}
-          </div>
-          <div className="hidden md:block bg-white rounded-2xl shadow-sm mb-10 overflow-hidden border border-gray-100">
-            <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-gray-50 border-b border-gray-100"><tr><th className="p-4 font-bold text-gray-600 text-xs uppercase">Nama</th><th className="p-4 font-bold text-gray-600 text-xs uppercase">Status</th><th className="p-4 font-bold text-gray-600 text-xs uppercase">Diet</th><th className="p-4 font-bold text-gray-600 text-xs uppercase">Minat</th><th className="p-4 font-bold text-center text-gray-600 text-xs uppercase">Aksi</th></tr></thead>
-              <tbody className="divide-y divide-gray-50">
-                {(participants || []).filter(u => u?.role !== 'admin').map(user => (
-                  <tr key={user.id}>
-                    <td className="p-4 font-bold">{user.realName || user.name}</td>
-                    <td className="p-4">{user?.hasCompletedSurvey ? <span className="text-green-600 text-xs font-bold">Selesai</span> : <span className="text-gray-400 text-xs">Menunggu</span>}</td>
-                    <td className="p-4 text-xs">{user.diet || '-'}</td>
-                    <td className="p-4"><div className="flex gap-1">{(user.interests || []).slice(0, 2).map((tag, i) => (<span key={i} className="bg-blue-50 text-blue-700 text-[10px] px-2 py-1 rounded font-bold">{formatTag(tag)}</span>))}</div></td>
-                    <td className="p-4 text-center flex justify-center gap-2"><button onClick={() => setModalConfig({ isOpen: true, type: 'reset', user })} className="p-2 bg-gray-50 rounded"><RefreshCw className="w-4 h-4 text-gray-600"/></button><button onClick={() => setModalConfig({ isOpen: true, type: 'delete', user })} className="p-2 bg-red-50 rounded"><Trash2 className="w-4 h-4 text-red-600"/></button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      );
-    }
-    
-    if (adminTab === 'logistik') {
-      const usersWithDiet = (participants || []).filter(u => u?.role !== 'admin' && u.diet && u.diet.toLowerCase() !== 'tidak ada' && u.diet !== '-');
-      const usersWithNeeds = (participants || []).filter(u => u?.role !== 'admin' && u.needs && u.needs.toLowerCase() !== 'tidak ada' && u.needs !== '-');
-
-      return (
-        <div className="space-y-6">
-          <h2 className="text-lg font-extrabold text-gray-800 flex items-center"><ClipboardList className="w-5 h-5 mr-2 text-blue-600" /> Pelayanan & Logistik</h2>
-          
-          <HotelVoucherCard />
-
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-            <h3 className="font-extrabold text-sm text-gray-900 mb-3 flex items-center"><Utensils className="w-4 h-4 mr-2 text-orange-500"/> Peringatan Pantangan Makanan</h3>
-            {usersWithDiet.length > 0 ? (
-              <ul className="space-y-2">
-                {usersWithDiet.map(u => <li key={u.id} className="text-xs bg-orange-50 p-2 rounded border border-orange-100"><span className="font-bold">{u.realName}:</span> {u.diet}</li>)}
-              </ul>
-            ) : <p className="text-xs text-gray-500">Tidak ada pantangan makanan khusus.</p>}
-          </div>
-
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-            <h3 className="font-extrabold text-sm text-gray-900 mb-3 flex items-center"><Info className="w-4 h-4 mr-2 text-blue-500"/> Kebutuhan Khusus</h3>
-            {usersWithNeeds.length > 0 ? (
-              <ul className="space-y-2">
-                {usersWithNeeds.map(u => <li key={u.id} className="text-xs bg-blue-50 p-2 rounded border border-blue-100"><span className="font-bold">{u.realName}:</span> {u.needs}</li>)}
-              </ul>
-            ) : <p className="text-xs text-gray-500">Tidak ada kebutuhan khusus tercatat.</p>}
-          </div>
-
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-            <h3 className="font-extrabold text-sm text-gray-900 mb-3 flex items-center"><Car className="w-4 h-4 mr-2 text-green-500"/> Daftar Tugas Admin</h3>
-            <div className="space-y-3">
-              <label className="flex items-start gap-2 text-xs text-gray-700"><input type="checkbox" className="mt-0.5 rounded text-blue-600" /> H-3: Pastikan semua peserta sudah mengisi MDAC (Malaysia Digital Arrival Card).</label>
-              <label className="flex items-start gap-2 text-xs text-gray-700"><input type="checkbox" className="mt-0.5 rounded text-blue-600" /> H-1: Cek masa berlaku paspor peserta.</label>
-              <label className="flex items-start gap-2 text-xs text-gray-700"><input type="checkbox" className="mt-0.5 rounded text-blue-600" /> Hari 1: Konfirmasi titik jemput di KLIA dengan sopir Hiace.</label>
-              <label className="flex items-start gap-2 text-xs text-gray-700"><input type="checkbox" className="mt-0.5 rounded text-blue-600" /> Harian: Rekap pesanan GrabFood jam 17:00 saat peserta di mobil.</label>
-              <label className="flex items-start gap-2 text-xs text-gray-700"><input type="checkbox" className="mt-0.5 rounded text-blue-600" /> Hari 5: Bangunkan peserta jam 02:00 pagi. Kendaraan jalan tepat 03:00 ke KLIA2.</label>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (adminTab === 'editjadwal') {
-      return (
-        <div className="space-y-8">
-          <h2 className="text-lg font-extrabold text-gray-800 mb-4 flex items-center"><Edit3 className="w-5 h-5 mr-2 text-blue-600" /> Editor Jadwal Perjalanan</h2>
-          {(itinerary || []).map((day, dayIdx) => (
-            <div key={dayIdx} className="bg-white rounded-3xl p-4 border border-gray-100 shadow-sm">
-              <div className="mb-4"><span className="bg-blue-600 text-white px-2.5 py-1 rounded-md text-[10px] font-bold uppercase mb-1 inline-block">Hari {day.day}</span><h3 className="text-lg font-extrabold text-gray-900 leading-tight">{day.title}</h3></div>
-              <div className="space-y-0">
-                {(day.activities || []).map((act, actIdx) => (
-                  <ActivityCard key={actIdx} act={act} dayIdx={dayIdx} actIdx={actIdx} match={false} isAdmin={true} />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      );
-    }
-  };
-
-  if (currentUser?.role === 'admin') {
-    return (
-      <div className="min-h-screen bg-gray-50 pb-20 font-sans">
-        <div className="bg-blue-700 text-white p-5 rounded-b-[2rem] shadow-md sticky top-0 z-40">
-          <div className="flex justify-between items-center mb-4">
-            <h1 className="text-xl font-extrabold">Pusat Komando</h1>
-            <button onClick={handleLogout} className="bg-white/20 p-2 rounded-full"><LogOut className="w-4 h-4" /></button>
-          </div>
-          <div className="flex bg-blue-800 rounded-xl p-1 gap-1 overflow-x-auto hide-scrollbar">
-            <button onClick={() => setAdminTab('peserta')} className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${adminTab === 'peserta' ? 'bg-white text-blue-700 shadow-sm' : 'text-blue-100 hover:bg-blue-700'}`}>Data Peserta</button>
-            <button onClick={() => setAdminTab('logistik')} className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${adminTab === 'logistik' ? 'bg-white text-blue-700 shadow-sm' : 'text-blue-100 hover:bg-blue-700'}`}>Logistik</button>
-            <button onClick={() => setAdminTab('editjadwal')} className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${adminTab === 'editjadwal' ? 'bg-white text-blue-700 shadow-sm' : 'text-blue-100 hover:bg-blue-700'}`}>Edit Jadwal</button>
-          </div>
-        </div>
-
-        <div className="max-w-4xl mx-auto px-4 mt-6">
-          {isDemoMode && <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 rounded-r-xl mb-6 shadow-sm"><h3 className="font-bold text-yellow-800 text-sm mb-1">Mode Uji Coba</h3><p className="text-xs text-yellow-700">Aplikasi belum terhubung ke Firebase.</p></div>}
-          {renderAdminContent()}
-        </div>
-        
-        {editingAct && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-              <h3 className="text-lg font-extrabold text-gray-900 mb-4">Edit Aktivitas</h3>
-              <form onSubmit={handleSaveActivity} className="space-y-4">
-                <div><label className="text-xs font-bold text-gray-500 uppercase">Jam</label><input type="time" value={editingAct.data.time} onChange={e => setEditingAct({...editingAct, data: {...editingAct.data, time: e.target.value}})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold mt-1" required/></div>
-                <div><label className="text-xs font-bold text-gray-500 uppercase">Deskripsi Utama</label><input type="text" value={editingAct.data.desc} onChange={e => setEditingAct({...editingAct, data: {...editingAct.data, desc: e.target.value}})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold mt-1" required/></div>
-                <div><label className="text-xs font-bold text-gray-500 uppercase">URL Gambar</label><input type="text" value={editingAct.data.thumbnail} onChange={e => setEditingAct({...editingAct, data: {...editingAct.data, thumbnail: e.target.value}})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold mt-1" required/></div>
-                <div><label className="text-xs font-bold text-gray-500 uppercase">Lokasi Peta</label><input type="text" value={editingAct.data.location} onChange={e => setEditingAct({...editingAct, data: {...editingAct.data, location: e.target.value}})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold mt-1"/></div>
-                <div><label className="text-xs font-bold text-gray-500 uppercase">Catatan Khusus (Info)</label><input type="text" value={editingAct.data.info || ''} onChange={e => setEditingAct({...editingAct, data: {...editingAct.data, info: e.target.value}})} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold mt-1" placeholder="Kosongkan jika tidak ada"/></div>
-                <div className="flex gap-2 pt-2">
-                  <button type="button" onClick={() => setEditingAct(null)} className="flex-1 py-3 text-gray-600 bg-gray-100 rounded-xl font-bold text-sm">Batal</button>
-                  <button type="submit" className="flex-1 py-3 text-white bg-blue-600 rounded-xl font-bold text-sm">Simpan Perubahan</button>
+                <div class="rounded-2xl overflow-hidden shadow-lg transition-all duration-300 bg-white border ${match ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-100'}">
+                    <div class="relative w-full aspect-video group cursor-pointer overflow-hidden rounded-t-2xl bg-gray-100">
+                        <img id="${imgId}" src="${act.thumbnail}" alt="${act.desc}" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                        <div class="absolute inset-0 bg-gradient-to-br from-[#ff8c46]/85 to-[#1a5380]/95 opacity-60 mix-blend-multiply transition-opacity duration-300 group-hover:opacity-70"></div>
+                        <div class="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end">
+                            <div class="flex justify-between items-end">
+                                <div>
+                                    <span class="text-orange-300 font-extrabold text-sm mb-1 block drop-shadow-md">${act.time}</span>
+                                    <h3 class="text-white text-lg font-bold leading-tight drop-shadow-md">${act.desc}</h3>
+                                </div>
+                                ${adminBtn}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        ${match ? `<div class="mb-3"><span class="inline-block bg-blue-600 text-white text-[10px] px-2 py-1 rounded font-bold shadow-sm">Rekomendasi Untukmu</span></div>` : ''}
+                        <div class="flex flex-wrap gap-2 mb-4">${tagsHtml}</div>
+                        ${insightHtml}
+                        ${souvenirHtml}
+                        ${mapHtml}
+                        ${infoHtml}
+                        ${todoHtml}
+                    </div>
                 </div>
-              </form>
-            </div>
-          </div>
-        )}
+            </div>`;
+        }
 
-        {modalConfig.isOpen && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-xs shadow-2xl">
-              <h3 className="text-lg font-extrabold text-gray-900 mb-2">Konfirmasi</h3>
-              <p className="text-gray-600 mb-6 text-sm font-medium">{modalConfig.type === 'delete' ? `Hapus data ${modalConfig.user.name}?` : `Reset kuesioner ${modalConfig.user.name}?`}</p>
-              <div className="flex gap-2 justify-end">
-                <button onClick={() => setModalConfig({ isOpen: false, type: '', user: null })} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-xl font-bold text-sm">Batal</button>
-                <button onClick={executeAction} className={`px-4 py-2 text-white rounded-xl font-bold text-sm ${modalConfig.type === 'delete' ? 'bg-red-600' : 'bg-yellow-500'}`}>Ya, Lanjut</button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
+        // --- SPECIFIC VIEWS ---
+        function renderSurveyQuestion() {
+            const qIdx = state.surveyStep - 1;
+            const q = QUESTIONS[qIdx];
+            let optionsHtml = '';
+            q.options.forEach(opt => {
+                optionsHtml += `<button onclick="window.handleAnswer('${q.id}', '${JSON.stringify(opt.tags)}')" class="w-full p-4 bg-white border border-gray-200 rounded-2xl text-left active:border-blue-500 active:bg-blue-50 font-bold text-gray-700 text-sm flex items-center justify-between shadow-sm mb-3"><span class="pr-4">${opt.text}</span><i data-lucide="chevron-right" class="w-4 h-4 text-gray-300 flex-shrink-0"></i></button>`;
+            });
 
-  const renderTabContent = () => {
-    if (activeTab === 'jadwal') {
-      return (
-        <div className="px-4 mt-4">
-          <LiveTripStatus />
-          <FilterHari />
-          <div className="space-y-8">
-            {(itinerary || []).filter(d => selectedDay === null || d.day === selectedDay).map((day, idx) => (
-              <div key={idx} className="relative">
-                <div className="sticky top-16 z-20 bg-white/90 backdrop-blur-md border border-gray-200 py-3 px-4 rounded-2xl shadow-sm mb-4 flex justify-between items-center">
-                  <div><h2 className="text-base font-extrabold text-gray-900">{day.title}</h2><p className="text-blue-600 font-bold text-[10px] uppercase">{day.date}</p></div>
-                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-500 text-xs">{day.day}</div>
+            document.getElementById('survey-content').innerHTML = `
+                <div class="mb-6 bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
+                    <p class="text-[10px] text-blue-600 font-bold uppercase mb-2">Pertanyaan ${qIdx + 1} dari ${QUESTIONS.length}</p>
+                    <div class="w-full bg-gray-100 rounded-full h-1.5 mb-4"><div class="bg-blue-500 h-1.5 rounded-full transition-all" style="width: ${((qIdx + 1) / QUESTIONS.length) * 100}%"></div></div>
+                    <h2 class="text-xl font-extrabold text-gray-800 leading-snug">${q.text}</h2>
                 </div>
-                <div className="ml-1">
-                  {(day.activities || []).map((act, i) => {
-                    const match = isRecommended(act.tags, currentUser?.interests);
-                    return <ActivityCard key={i} act={act} match={match} isAdmin={false} />;
-                  })}
+                <div>${optionsHtml}</div>
+            `;
+        }
+
+        function renderBottomNav() {
+            const tabs = [
+                { id: 'jadwal', icon: 'calendar', label: 'Jadwal' },
+                { id: 'peta', icon: 'map', label: 'Peta' },
+                { id: 'profil', icon: 'user', label: 'Profil' },
+                { id: 'info', icon: 'info', label: 'Info' }
+            ];
+            document.getElementById('bottom-nav').innerHTML = tabs.map(t => `
+                <button onclick="window.switchTab('${t.id}')" class="flex flex-col items-center p-2 w-16 ${state.activeTab === t.id ? 'text-blue-600' : 'text-gray-400'}">
+                    <i data-lucide="${t.icon}" class="w-6 h-6"></i><span class="text-[10px] font-bold mt-1">${t.label}</span>
+                </button>
+            `).join('');
+        }
+
+        function renderLiveTripStatus() {
+            let currentAct = null, nextAct = null, status = 'PRE-TRIP';
+            if (state.flatSchedule.length > 0) {
+                if (state.now < state.flatSchedule[0].datetime) status = 'PRE-TRIP';
+                else if (state.now > state.flatSchedule[state.flatSchedule.length - 1].datetime) status = 'POST-TRIP';
+                else {
+                    status = 'ON-TRIP';
+                    for (let i = 0; i < state.flatSchedule.length; i++) {
+                        if (state.now >= state.flatSchedule[i].datetime && (!state.flatSchedule[i+1] || state.now < state.flatSchedule[i+1].datetime)) {
+                            currentAct = state.flatSchedule[i];
+                            nextAct = state.flatSchedule[i+1] || null;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            let html = '';
+            if (status === 'PRE-TRIP') {
+                html = `<div class="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-4 mb-6 text-white shadow-md border border-blue-500 relative overflow-hidden"><div class="absolute top-0 right-0 p-4 opacity-20"><i data-lucide="calendar" class="w-16 h-16"></i></div><h3 class="font-extrabold text-sm mb-1 flex items-center"><i data-lucide="navigation" class="w-4 h-4 mr-2"></i> Persiapan Keberangkatan</h3><p class="text-xs text-blue-100 font-medium">Perjalanan dimulai 30 April 2026. Persiapkan fisik dan dokumen Kamu.</p></div>`;
+            } else if (status === 'POST-TRIP') {
+                html = `<div class="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl p-4 mb-6 text-white shadow-md border border-green-500"><h3 class="font-extrabold text-sm mb-1 flex items-center"><i data-lucide="check-circle" class="w-4 h-4 mr-2"></i> Misi Selesai</h3><p class="text-xs text-green-100 font-medium">Seluruh rangkaian tur Malaysia diselesaikan dengan baik.</p></div>`;
+            } else {
+                html = `
+                <div class="bg-white rounded-2xl p-4 mb-6 shadow-md border border-blue-100 relative overflow-hidden">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center text-blue-600"><div class="w-2.5 h-2.5 bg-blue-600 rounded-full mr-2 live-indicator"></div><span class="text-xs font-extrabold uppercase tracking-widest">Pelacak Waktu</span></div>
+                        <span class="text-[10px] font-bold text-gray-400">${state.now.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</span>
+                    </div>
+                    ${currentAct ? `
+                    <div class="mb-3 border-l-2 border-blue-500 pl-3">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase">Saat Ini</p>
+                        <p class="text-sm font-extrabold text-gray-900 leading-tight">${currentAct.desc}</p>
+                        <p class="text-xs text-blue-600 font-bold flex items-center mt-1"><i data-lucide="map-pin" class="w-3 h-3 mr-1"></i> ${currentAct.location}</p>
+                    </div>` : ''}
+                    ${nextAct ? `
+                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 flex items-start">
+                        <i data-lucide="arrow-right" class="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0"></i>
+                        <div><p class="text-[10px] font-bold text-gray-400 uppercase">Berikutnya • ${nextAct.time}</p><p class="text-xs font-bold text-gray-700">${nextAct.desc}</p></div>
+                    </div>` : ''}
+                </div>`;
+            }
+            
+            const container = document.getElementById('dash-live-status');
+            if(container) {
+                container.innerHTML = html;
+                if(window.lucide) window.lucide.createIcons();
+            }
+            return html;
+        }
+
+        function renderFilterHari() {
+            let html = `<div class="flex gap-2 overflow-x-auto hide-scrollbar py-2 mb-4 sticky top-0 bg-gray-50 z-30 border-b border-gray-200 px-4 -mx-4 shadow-sm">`;
+            html += `<button onclick="window.filterDay(null)" class="px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors border ${state.selectedDay === null ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-gray-600 border-gray-200 active:bg-gray-100'}">Semua Hari</button>`;
+            [1, 2, 3, 4, 5].forEach(day => {
+                html += `<button onclick="window.filterDay(${day})" class="px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors border ${state.selectedDay === day ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-gray-600 border-gray-200 active:bg-gray-100'}">Hari ${day}</button>`;
+            });
+            html += `</div>`;
+            return html;
+        }
+
+        window.renderDashboardJadwal = () => {
+            let html = `<div class="px-4 mt-4"><div id="dash-live-status">${renderLiveTripStatus()}</div>${renderFilterHari()}<div class="space-y-8">`;
+            
+            state.itinerary.filter(d => state.selectedDay === null || d.day === state.selectedDay).forEach((day, idx) => {
+                html += `
+                <div class="relative">
+                    <div class="sticky top-16 z-20 bg-white/90 backdrop-blur-md border border-gray-200 py-3 px-4 rounded-2xl shadow-sm mb-4 flex justify-between items-center">
+                        <div><h2 class="text-base font-extrabold text-gray-900">${day.title}</h2><p class="text-blue-600 font-bold text-[10px] uppercase">${day.date}</p></div>
+                        <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-500 text-xs">${day.day}</div>
+                    </div>
+                    <div class="ml-1">`;
+                day.activities.forEach((act, i) => {
+                    html += renderActivityCard(act, idx, i, isRecommended(act.tags, state.currentUser?.interests), false);
+                });
+                html += `</div></div>`;
+            });
+            html += `</div></div>`;
+            document.getElementById('dashboard-content').innerHTML = html;
+        };
+
+        function renderDashboardPeta() {
+            document.getElementById('dashboard-content').innerHTML = `
+                <div class="px-4 mt-6 h-[70vh] flex flex-col">
+                    <h2 class="text-xl font-extrabold text-gray-900 mb-4 flex items-center"><i data-lucide="map" class="w-6 h-6 mr-2 text-blue-600"></i> Peta Sentral</h2>
+                    <div class="bg-white rounded-3xl p-2 shadow-sm border border-gray-200 flex-1 overflow-hidden relative">
+                        <iframe title="Peta Malaysia" width="100%" height="100%" frameBorder="0" class="rounded-2xl" src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d1019992.5132338164!2d101.99616035000001!3d2.7844055!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sm!2sid!4v1700000000000!5m2!1sm!2sid" allowFullScreen></iframe>
+                    </div>
+                </div>`;
+        }
+
+        function renderDashboardProfil() {
+            const tagsHtml = (state.currentUser?.interests || []).map(t => `<span class="bg-blue-50 text-blue-700 text-xs px-3 py-1.5 rounded-lg font-bold border border-blue-100">${formatTag(t)}</span>`).join('');
+            document.getElementById('dashboard-content').innerHTML = `
+                <div class="px-4 mt-6">
+                    <h2 class="text-xl font-extrabold text-gray-900 mb-6 flex items-center"><i data-lucide="user" class="w-6 h-6 mr-2 text-blue-600"></i> Profil Kamu</h2>
+                    <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-200 mb-6">
+                        <div class="mb-6"><p class="text-xs text-gray-400 font-bold uppercase mb-1">Nama</p><p class="text-lg font-extrabold text-gray-900">${state.currentUser?.realName || state.currentUser?.name}</p></div>
+                        <div class="mb-6"><p class="text-xs text-gray-400 font-bold uppercase mb-1">Pantangan Makanan</p><p class="text-base font-bold text-gray-800">${state.currentUser?.diet || 'Tidak ada'}</p></div>
+                        <div class="mb-6"><p class="text-xs text-gray-400 font-bold uppercase mb-1">Kebutuhan Khusus</p><p class="text-base font-bold text-gray-800">${state.currentUser?.needs || 'Tidak ada'}</p></div>
+                        <div><p class="text-xs text-gray-400 font-bold uppercase mb-2">Minat Utama</p><div class="flex flex-wrap gap-2">${tagsHtml}</div></div>
+                    </div>
+                    <button onclick="window.handleLogout()" class="w-full bg-red-50 text-red-600 font-bold py-4 rounded-xl active:bg-red-100 transition-colors shadow-sm flex items-center justify-center">
+                        <i data-lucide="log-out" class="w-5 h-5 mr-2"></i> Keluar Akun
+                    </button>
+                </div>`;
+        }
+
+        function renderDashboardInfo() {
+            document.getElementById('dashboard-content').innerHTML = `
+                <div class="px-4 mt-6">
+                    <h2 class="text-xl font-extrabold text-gray-900 mb-4 flex items-center"><i data-lucide="info" class="w-6 h-6 mr-2 text-blue-600"></i> Pusat Informasi</h2>
+                    ${renderHotelVoucher()}
+                    <div class="mb-6">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Prakiraan Cuaca</p>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-white border border-gray-200 p-4 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-sm"><div class="bg-orange-50 p-3 rounded-full"><i data-lucide="sun" class="w-6 h-6 text-orange-500"></i></div><div class="text-center"><p class="text-[10px] text-gray-500 font-bold uppercase">Kuala Lumpur</p><p class="font-extrabold text-gray-800 text-lg">32°C</p></div></div>
+                            <div class="bg-white border border-gray-200 p-4 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-sm"><div class="bg-blue-50 p-3 rounded-full"><i data-lucide="cloud-rain" class="w-6 h-6 text-blue-500"></i></div><div class="text-center"><p class="text-[10px] text-gray-500 font-bold uppercase">Melaka</p><p class="font-extrabold text-gray-800 text-lg">28°C</p></div></div>
+                        </div>
+                    </div>
+                    <div class="bg-orange-50 border border-orange-200 p-5 rounded-3xl shadow-sm">
+                        <h3 class="font-extrabold text-orange-800 flex items-center mb-3 text-base"><i data-lucide="alert-triangle" class="w-5 h-5 mr-2"></i> Aturan Subuh</h3>
+                        <p class="text-sm text-orange-700 leading-relaxed font-medium mb-3">Hari ke-5 kita wajib berangkat ke KLIA2 dini hari. Barang bawaan harus tertata malam sebelumnya.</p>
+                    </div>
+                </div>`;
+        }
+
+        // --- ADMIN VIEWS ---
+        function renderAdminNav() {
+            const tabs = [
+                { id: 'peserta', label: 'Data Peserta' },
+                { id: 'logistik', label: 'Logistik' },
+                { id: 'editjadwal', label: 'Edit Jadwal' }
+            ];
+            document.getElementById('admin-nav').innerHTML = tabs.map(t => `
+                <button onclick="window.switchAdminTab('${t.id}')" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${state.adminTab === t.id ? 'bg-white text-blue-700 shadow-sm' : 'text-blue-100 hover:bg-blue-700'}">${t.label}</button>
+            `).join('');
+        }
+
+        window.renderAdminPeserta = () => {
+            const users = state.participants.filter(u => u?.role !== 'admin');
+            let html = `<div class="space-y-4"><h2 class="text-lg font-extrabold text-gray-800 mb-4 flex items-center"><i data-lucide="users" class="w-5 h-5 mr-2 text-blue-600"></i> Monitor Pasukan</h2>`;
+            
+            // Mobile View
+            html += `<div class="md:hidden space-y-4 mb-8">`;
+            if (users.length === 0) html += `<p class="text-center text-sm text-gray-400 font-bold py-4">Belum ada peserta.</p>`;
+            users.forEach(user => {
+                html += `
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="font-bold text-gray-800">${user.realName || user.name}</span>
+                        ${user.hasCompletedSurvey ? `<span class="inline-flex items-center text-green-700 bg-green-50 px-2 py-1 rounded text-[10px] font-bold"><i data-lucide="check-circle" class="w-3 h-3 mr-1"></i> Selesai</span>` : `<span class="text-gray-500 bg-gray-50 px-2 py-1 rounded text-[10px] font-bold">Menunggu</span>`}
+                    </div>
+                    <div class="text-xs text-gray-600 mb-1"><span class="font-bold">Diet:</span> ${user.diet || '-'}</div>
+                    <div class="text-xs text-gray-600 mb-3"><span class="font-bold">Catatan:</span> ${user.needs || '-'}</div>
+                    <div class="flex flex-wrap gap-1 mb-4">${(user.interests || []).map(t => `<span class="bg-blue-50 text-blue-700 text-[10px] px-2 py-1 rounded font-bold border border-blue-100">${formatTag(t)}</span>`).join('')}</div>
+                    <div class="flex gap-2">
+                        <button onclick="window.openActionModal('reset', '${user.id}')" class="flex-1 py-2 bg-yellow-50 text-yellow-700 rounded-xl font-bold text-xs flex justify-center items-center"><i data-lucide="refresh-cw" class="w-3 h-3 mr-1"></i> Reset</button>
+                        <button onclick="window.openActionModal('delete', '${user.id}')" class="flex-1 py-2 bg-red-50 text-red-700 rounded-xl font-bold text-xs flex justify-center items-center"><i data-lucide="trash-2" class="w-3 h-3 mr-1"></i> Hapus</button>
+                    </div>
+                </div>`;
+            });
+            html += `</div>`;
+
+            // Desktop View
+            html += `
+            <div class="hidden md:block bg-white rounded-2xl shadow-sm mb-10 overflow-hidden border border-gray-100">
+                <table class="w-full text-left text-sm whitespace-nowrap">
+                    <thead class="bg-gray-50 border-b border-gray-100"><tr><th class="p-4 font-bold text-gray-600 text-xs uppercase">Nama</th><th class="p-4 font-bold text-gray-600 text-xs uppercase">Status</th><th class="p-4 font-bold text-gray-600 text-xs uppercase">Diet</th><th class="p-4 font-bold text-gray-600 text-xs uppercase">Minat</th><th class="p-4 font-bold text-center text-gray-600 text-xs uppercase">Aksi</th></tr></thead>
+                    <tbody class="divide-y divide-gray-50">`;
+            users.forEach(user => {
+                html += `
+                    <tr>
+                        <td class="p-4 font-bold">${user.realName || user.name}</td>
+                        <td class="p-4">${user.hasCompletedSurvey ? '<span class="text-green-600 text-xs font-bold">Selesai</span>' : '<span class="text-gray-400 text-xs">Menunggu</span>'}</td>
+                        <td class="p-4 text-xs">${user.diet || '-'}</td>
+                        <td class="p-4"><div class="flex gap-1">${(user.interests || []).slice(0, 2).map(t => `<span class="bg-blue-50 text-blue-700 text-[10px] px-2 py-1 rounded font-bold">${formatTag(t)}</span>`).join('')}</div></td>
+                        <td class="p-4 text-center flex justify-center gap-2"><button onclick="window.openActionModal('reset', '${user.id}')" class="p-2 bg-gray-50 rounded"><i data-lucide="refresh-cw" class="w-4 h-4 text-gray-600"></i></button><button onclick="window.openActionModal('delete', '${user.id}')" class="p-2 bg-red-50 rounded"><i data-lucide="trash-2" class="w-4 h-4 text-red-600"></i></button></td>
+                    </tr>`;
+            });
+            html += `</tbody></table></div></div>`;
+            document.getElementById('admin-content').innerHTML = html;
+        };
+
+        function renderAdminLogistik() {
+            const usersWithDiet = state.participants.filter(u => u?.role !== 'admin' && u.diet && u.diet.toLowerCase() !== 'tidak ada' && u.diet !== '-');
+            const usersWithNeeds = state.participants.filter(u => u?.role !== 'admin' && u.needs && u.needs.toLowerCase() !== 'tidak ada' && u.needs !== '-');
+
+            let html = `
+            <div class="space-y-6">
+                <h2 class="text-lg font-extrabold text-gray-800 flex items-center"><i data-lucide="clipboard-list" class="w-5 h-5 mr-2 text-blue-600"></i> Pelayanan & Logistik</h2>
+                ${renderHotelVoucher()}
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                    <h3 class="font-extrabold text-sm text-gray-900 mb-3 flex items-center"><i data-lucide="utensils" class="w-4 h-4 mr-2 text-orange-500"></i> Peringatan Pantangan Makanan</h3>
+                    ${usersWithDiet.length > 0 ? `<ul class="space-y-2">${usersWithDiet.map(u => `<li class="text-xs bg-orange-50 p-2 rounded border border-orange-100"><span class="font-bold">${u.realName}:</span> ${u.diet}</li>`).join('')}</ul>` : `<p class="text-xs text-gray-500">Tidak ada pantangan makanan khusus.</p>`}
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                    <h3 class="font-extrabold text-sm text-gray-900 mb-3 flex items-center"><i data-lucide="info" class="w-4 h-4 mr-2 text-blue-500"></i> Kebutuhan Khusus</h3>
+                    ${usersWithNeeds.length > 0 ? `<ul class="space-y-2">${usersWithNeeds.map(u => `<li class="text-xs bg-blue-50 p-2 rounded border border-blue-100"><span class="font-bold">${u.realName}:</span> ${u.needs}</li>`).join('')}</ul>` : `<p class="text-xs text-gray-500">Tidak ada kebutuhan khusus tercatat.</p>`}
+                </div>
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                    <h3 class="font-extrabold text-sm text-gray-900 mb-3 flex items-center"><i data-lucide="car" class="w-4 h-4 mr-2 text-green-500"></i> Daftar Tugas Admin</h3>
+                    <div class="space-y-3">
+                        <label class="flex items-start gap-2 text-xs text-gray-700"><input type="checkbox" class="mt-0.5 rounded text-blue-600" /> H-3: Pastikan semua peserta sudah mengisi MDAC (Malaysia Digital Arrival Card).</label>
+                        <label class="flex items-start gap-2 text-xs text-gray-700"><input type="checkbox" class="mt-0.5 rounded text-blue-600" /> H-1: Cek masa berlaku paspor peserta.</label>
+                        <label class="flex items-start gap-2 text-xs text-gray-700"><input type="checkbox" class="mt-0.5 rounded text-blue-600" /> Hari 1: Konfirmasi titik jemput di KLIA dengan sopir Hiace.</label>
+                        <label class="flex items-start gap-2 text-xs text-gray-700"><input type="checkbox" class="mt-0.5 rounded text-blue-600" /> Harian: Rekap pesanan GrabFood jam 17:00 saat peserta di mobil.</label>
+                        <label class="flex items-start gap-2 text-xs text-gray-700"><input type="checkbox" class="mt-0.5 rounded text-blue-600" /> Hari 5: Bangunkan peserta jam 02:00 pagi. Kendaraan jalan tepat 03:00 ke KLIA2.</label>
+                    </div>
+                </div>
+            </div>`;
+            document.getElementById('admin-content').innerHTML = html;
+        }
 
-    if (activeTab === 'peta') {
-      return (
-        <div className="px-4 mt-6 h-[70vh] flex flex-col">
-          <h2 className="text-xl font-extrabold text-gray-900 mb-4 flex items-center"><MapIcon className="w-6 h-6 mr-2 text-blue-600" /> Peta Sentral</h2>
-          <div className="bg-white rounded-3xl p-2 shadow-sm border border-gray-200 flex-1 overflow-hidden relative">
-             <iframe title="Peta Malaysia" width="100%" height="100%" frameBorder="0" className="rounded-2xl" src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d1019992.5132338164!2d101.99616035000001!3d2.7844055!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sm!2sid!4v1700000000000!5m2!1sm!2sid" allowFullScreen></iframe>
-          </div>
-        </div>
-      );
-    }
+        function renderAdminEditJadwal() {
+            let html = `<div class="space-y-8"><h2 class="text-lg font-extrabold text-gray-800 mb-4 flex items-center"><i data-lucide="edit-3" class="w-5 h-5 mr-2 text-blue-600"></i> Editor Jadwal Perjalanan</h2>`;
+            state.itinerary.forEach((day, dayIdx) => {
+                html += `
+                <div class="bg-white rounded-3xl p-4 border border-gray-100 shadow-sm">
+                    <div class="mb-4"><span class="bg-blue-600 text-white px-2.5 py-1 rounded-md text-[10px] font-bold uppercase mb-1 inline-block">Hari ${day.day}</span><h3 class="text-lg font-extrabold text-gray-900 leading-tight">${day.title}</h3></div>
+                    <div class="space-y-0">`;
+                day.activities.forEach((act, actIdx) => {
+                    html += renderActivityCard(act, dayIdx, actIdx, false, true);
+                });
+                html += `</div></div>`;
+            });
+            html += `</div>`;
+            document.getElementById('admin-content').innerHTML = html;
+        }
 
-    if (activeTab === 'profil') {
-      return (
-        <div className="px-4 mt-6">
-          <h2 className="text-xl font-extrabold text-gray-900 mb-6 flex items-center"><User className="w-6 h-6 mr-2 text-blue-600" /> Profil Kamu</h2>
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-200 mb-6">
-            <div className="mb-6"><p className="text-xs text-gray-400 font-bold uppercase mb-1">Nama</p><p className="text-lg font-extrabold text-gray-900">{currentUser?.realName || currentUser?.name}</p></div>
-            <div className="mb-6"><p className="text-xs text-gray-400 font-bold uppercase mb-1">Pantangan Makanan</p><p className="text-base font-bold text-gray-800">{currentUser?.diet || 'Tidak ada'}</p></div>
-            <div className="mb-6"><p className="text-xs text-gray-400 font-bold uppercase mb-1">Kebutuhan Khusus</p><p className="text-base font-bold text-gray-800">{currentUser?.needs || 'Tidak ada'}</p></div>
-            <div>
-              <p className="text-xs text-gray-400 font-bold uppercase mb-2">Minat Utama</p>
-              <div className="flex flex-wrap gap-2">
-                {(currentUser?.interests || []).map((tag, i) => (<span key={i} className="bg-blue-50 text-blue-700 text-xs px-3 py-1.5 rounded-lg font-bold border border-blue-100">{formatTag(tag)}</span>))}
-              </div>
-            </div>
-          </div>
-          <button onClick={handleLogout} className="w-full bg-red-50 text-red-600 font-bold py-4 rounded-xl active:bg-red-100 transition-colors shadow-sm flex items-center justify-center">
-            <LogOut className="w-5 h-5 mr-2" /> Keluar Akun
-          </button>
-        </div>
-      );
-    }
+        // Run
+        init();
 
-    if (activeTab === 'info') {
-      return (
-        <div className="px-4 mt-6">
-          <h2 className="text-xl font-extrabold text-gray-900 mb-4 flex items-center"><Info className="w-6 h-6 mr-2 text-blue-600" /> Pusat Informasi</h2>
-          
-          <HotelVoucherCard />
-
-          <div className="mb-6">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Prakiraan Cuaca</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white border border-gray-200 p-4 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-sm">
-                <div className="bg-orange-50 p-3 rounded-full"><Sun className="w-6 h-6 text-orange-500" /></div>
-                <div className="text-center"><p className="text-[10px] text-gray-500 font-bold uppercase">Kuala Lumpur</p><p className="font-extrabold text-gray-800 text-lg">32°C</p></div>
-              </div>
-              <div className="bg-white border border-gray-200 p-4 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-sm">
-                <div className="bg-blue-50 p-3 rounded-full"><CloudRain className="w-6 h-6 text-blue-500" /></div>
-                <div className="text-center"><p className="text-[10px] text-gray-500 font-bold uppercase">Melaka</p><p className="font-extrabold text-gray-800 text-lg">28°C</p></div>
-              </div>
-            </div>
-          </div>
-          <div className="bg-orange-50 border border-orange-200 p-5 rounded-3xl shadow-sm">
-            <h3 className="font-extrabold text-orange-800 flex items-center mb-3 text-base"><AlertTriangle className="w-5 h-5 mr-2" /> Aturan Subuh</h3>
-            <p className="text-sm text-orange-700 leading-relaxed font-medium mb-3">Hari ke-5 kita wajib berangkat ke KLIA2 dini hari. Barang bawaan harus tertata malam sebelumnya.</p>
-          </div>
-        </div>
-      );
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50 pb-24 font-sans">
-      <div className="relative h-48 bg-gray-900 rounded-b-[2rem] shadow-sm overflow-hidden">
-        <div className="absolute inset-0 w-full h-full opacity-40">
-           <img src="https://images.unsplash.com/photo-1584646098378-0874589d76b1?w=800&q=80" alt="Background" className="w-full h-full object-cover" />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-        <div className="absolute top-4 right-4">
-          <button onClick={handleLogout} className="bg-white/20 p-2 rounded-full text-white"><LogOut className="w-4 h-4" /></button>
-        </div>
-        <div className="absolute bottom-5 left-5 right-5">
-          <h1 className="text-2xl font-extrabold text-white mb-1">Trip Malaysia</h1>
-          <p className="text-gray-300 text-xs font-bold uppercase tracking-widest">{currentUser?.realName || currentUser?.name}</p>
-        </div>
-      </div>
-      <div className="max-w-md mx-auto w-full">{renderTabContent()}</div>
-      <BottomNav />
-    </div>
-  );
-}
+    </script>
+</body>
+</html>
