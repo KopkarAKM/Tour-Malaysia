@@ -175,7 +175,7 @@
         import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         // --- CONSTANTS & DATA ---
-        const GOOGLE_PLACES_API_KEY = ""; 
+        const GOOGLE_PLACES_API_KEY = "";
         const DATE_MAP = { '30 April': '2026-04-30', '1 Mei': '2026-05-01', '2 Mei': '2026-05-02', '3 Mei': '2026-05-03', '4 Mei': '2026-05-04' };
 
         const QUESTIONS = [
@@ -239,7 +239,15 @@
         ];
 
         // --- FIREBASE INIT ---
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        let firebaseConfig = {};
+        try {
+            if (typeof __firebase_config !== 'undefined') {
+                firebaseConfig = typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : __firebase_config;
+            }
+        } catch (e) {
+            console.warn("Konfigurasi Firebase gagal dimuat", e);
+        }
+
         let app, auth, db;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         
@@ -265,16 +273,18 @@
         // --- INIT FIREBASE & STATE ---
         async function init() {
             try {
-                app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-                
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
+                if (Object.keys(firebaseConfig).length > 0) {
+                    app = initializeApp(firebaseConfig);
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+                    
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                    state.isDemoMode = false;
                 }
-                state.isDemoMode = false;
             } catch (error) {
                 console.error("Auth Error:", error);
                 state.isDemoMode = true;
@@ -477,13 +487,18 @@
         };
 
         window.handleAnswer = (qId, tagsStr) => {
-            const tags = JSON.parse(tagsStr);
-            state.currentAnswers[qId] = tags;
-            if (state.surveyStep < QUESTIONS.length) {
-                state.surveyStep++;
-                updateUI();
-            } else {
-                finishSurvey();
+            try {
+                // Konversi kembali dari string escaped
+                const tags = JSON.parse(tagsStr.replace(/&quot;/g, '"'));
+                state.currentAnswers[qId] = tags;
+                if (state.surveyStep < QUESTIONS.length) {
+                    state.surveyStep++;
+                    updateUI();
+                } else {
+                    finishSurvey();
+                }
+            } catch (e) {
+                console.error("Format jawaban tidak valid", e);
             }
         };
 
@@ -765,7 +780,9 @@
             const q = QUESTIONS[qIdx];
             let optionsHtml = '';
             q.options.forEach(opt => {
-                optionsHtml += `<button onclick="window.handleAnswer('${q.id}', '${JSON.stringify(opt.tags)}')" class="w-full p-4 bg-white border border-gray-200 rounded-2xl text-left active:border-blue-500 active:bg-blue-50 font-bold text-gray-700 text-sm flex items-center justify-between shadow-sm mb-3"><span class="pr-4">${opt.text}</span><i data-lucide="chevron-right" class="w-4 h-4 text-gray-300 flex-shrink-0"></i></button>`;
+                // Hindari masalah tanda kutip ganda memotong HTML
+                const tagsStr = JSON.stringify(opt.tags).replace(/"/g, '&quot;');
+                optionsHtml += `<button onclick="window.handleAnswer('${q.id}', '${tagsStr}')" class="w-full p-4 bg-white border border-gray-200 rounded-2xl text-left active:border-blue-500 active:bg-blue-50 font-bold text-gray-700 text-sm flex items-center justify-between shadow-sm mb-3"><span class="pr-4">${opt.text}</span><i data-lucide="chevron-right" class="w-4 h-4 text-gray-300 flex-shrink-0"></i></button>`;
             });
 
             document.getElementById('survey-content').innerHTML = `
