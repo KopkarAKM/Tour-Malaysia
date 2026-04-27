@@ -41,7 +41,23 @@
             <p class="text-blue-600 font-bold text-xs uppercase tracking-widest mb-6">Edisi Malaysia</p>
             
             <form onsubmit="window.handleLoginSubmit(event)" class="space-y-4">
-                <input type="text" id="login-name" class="w-full p-4 border border-gray-200 bg-gray-50 rounded-xl text-base text-center font-bold outline-none focus:border-blue-500" placeholder="Ketik nama Kamu..." required />
+                <div class="relative">
+                    <select id="login-name" class="w-full p-4 border border-gray-200 bg-gray-50 rounded-xl text-base text-center font-bold outline-none focus:border-blue-500 appearance-none text-gray-700" required>
+                        <option value="" disabled selected>Pilih Nama Kamu...</option>
+                        <option value="Hendra">Hendra</option>
+                        <option value="Bahliani">Bahliani</option>
+                        <option value="Andra Orahmin">Andra Orahmin</option>
+                        <option value="Ria Tahfazona Subeli">Ria Tahfazona Subeli</option>
+                        <option value="Nanda Amelia">Nanda Amelia</option>
+                        <option value="Effrima Yanti">Effrima Yanti</option>
+                        <option value="Rahmi Muthmainnah Rizami">Rahmi Muthmainnah Rizami</option>
+                        <option value="Dzaky Hasni Putera">Dzaky Hasni Putera</option>
+                        <option value="Ario Pranoto">Ario Pranoto</option>
+                        <option value="Alhamdi Rasyid">Alhamdi Rasyid</option>
+                        <option value="Muhammad Aqbi Suharna">Muhammad Aqbi Suharna</option>
+                    </select>
+                    <i data-lucide="chevron-down" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none"></i>
+                </div>
                 <button type="submit" id="btn-login" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl active:bg-blue-700 shadow-md text-sm opacity-50 cursor-not-allowed" disabled>Menghubungkan Server...</button>
             </form>
             <button onclick="window.showAdminModal(true)" class="mt-6 text-xs text-gray-400 font-bold active:text-gray-800 py-2 px-4">Login Admin</button>
@@ -72,7 +88,7 @@
         <form onsubmit="window.handleProfileSubmit(event)" class="flex-1 flex flex-col w-full max-w-sm mx-auto">
             <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-5">
                 <div id="profile-error" class="bg-red-50 text-red-600 p-3 rounded-lg text-xs font-bold hidden"></div>
-                <div><label class="block text-xs font-bold text-gray-500 uppercase mb-2">Nama Panggilan</label><input type="text" id="profile-name" class="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500" placeholder="Nama Kamu"/></div>
+                <div><label class="block text-xs font-bold text-gray-500 uppercase mb-2">Nama Lengkap</label><input type="text" id="profile-name" class="w-full p-3.5 bg-gray-100 border border-gray-200 rounded-xl text-sm font-bold text-gray-600 cursor-not-allowed" readonly placeholder="Nama Kamu"/></div>
                 <div><label class="block text-xs font-bold text-gray-500 uppercase mb-2">Alergi Makanan</label><input type="text" id="profile-diet" class="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500" placeholder="Kosongkan jika aman"/></div>
                 <div><label class="block text-xs font-bold text-gray-500 uppercase mb-2">Kebutuhan Khusus</label><textarea id="profile-needs" class="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500 min-h-[80px]" placeholder="Mudah mabuk, dsb."></textarea></div>
                 <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl active:bg-blue-700 shadow-md text-sm mt-2">Lanjut Kuesioner</button>
@@ -507,7 +523,6 @@
 
         window.handleAnswer = (qId, tagsStr) => {
             try {
-                // Konversi kembali dari string escaped
                 const tags = JSON.parse(tagsStr.replace(/&quot;/g, '"'));
                 state.currentAnswers[qId] = tags;
                 if (state.surveyStep < QUESTIONS.length) {
@@ -550,7 +565,6 @@
             if (!state.isDemoMode) {
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'participants', state.currentUser.id), { checkedTasks: newTasks });
             }
-            // Just re-render Jadwal
             renderDashboardJadwal();
         };
 
@@ -705,6 +719,70 @@
                         <p class="text-xs text-green-800 font-bold leading-tight">Lunas. Termasuk 10 Sarapan & WiFi Gratis.</p>
                     </div>
                 </div>
+            </div>`;
+        }
+
+        function renderFlightInfo() {
+            return `
+            <div class="bg-white border border-gray-200 p-5 rounded-3xl shadow-sm mb-6">
+                <h3 class="font-extrabold text-blue-800 flex items-center mb-4 text-base"><i data-lucide="plane" class="w-5 h-5 mr-2"></i> Info Penerbangan</h3>
+                
+                <div class="space-y-4">
+                    <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Keberangkatan</span>
+                            <span class="bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded font-bold">AK-441</span>
+                        </div>
+                        <p class="font-bold text-gray-800 text-sm mb-1">Kamis, 30 Apr 2026</p>
+                        <div class="flex items-center justify-between text-xs text-gray-600 font-medium mt-3">
+                            <div class="text-center"><p class="font-bold text-gray-900 text-lg">10:20</p><p>BDJ</p></div>
+                            <div class="flex-1 px-4 flex items-center"><div class="h-px bg-gray-300 w-full"></div><i data-lucide="plane-takeoff" class="w-4 h-4 mx-2 text-gray-400"></i><div class="h-px bg-gray-300 w-full"></div></div>
+                            <div class="text-center"><p class="font-bold text-gray-900 text-lg">13:00</p><p>KUL</p></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Kepulangan</span>
+                            <span class="bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded font-bold">AK-442</span>
+                        </div>
+                        <p class="font-bold text-gray-800 text-sm mb-1">Senin, 04 Mei 2026</p>
+                        <div class="flex items-center justify-between text-xs text-gray-600 font-medium mt-3">
+                            <div class="text-center"><p class="font-bold text-gray-900 text-lg">07:15</p><p>KUL</p></div>
+                            <div class="flex-1 px-4 flex items-center"><div class="h-px bg-gray-300 w-full"></div><i data-lucide="plane-landing" class="w-4 h-4 mx-2 text-gray-400"></i><div class="h-px bg-gray-300 w-full"></div></div>
+                            <div class="text-center"><p class="font-bold text-gray-900 text-lg">09:55</p><p>BDJ</p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function renderImmigrationReminders() {
+            return `
+            <div class="mb-6 space-y-3">
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Dokumen Wajib Imigrasi</p>
+                
+                <a href="https://imigresen-online.imi.gov.my/mdac/main?registerMain" target="_blank" class="block bg-blue-50 border border-blue-200 p-4 rounded-2xl shadow-sm active:bg-blue-100 transition-colors">
+                    <div class="flex items-start">
+                        <div class="bg-blue-600 p-2 rounded-xl mr-3 shadow-sm flex-shrink-0"><i data-lucide="file-check-2" class="w-5 h-5 text-white"></i></div>
+                        <div>
+                            <h4 class="font-bold text-blue-900 text-sm mb-1">MDAC Malaysia</h4>
+                            <p class="text-[11px] text-blue-700 font-medium leading-tight mb-2">Wajib isi formulir ini sebelum tiba di Malaysia.</p>
+                            <span class="text-[10px] font-bold text-blue-600 uppercase flex items-center">Isi Sekarang <i data-lucide="chevron-right" class="w-3 h-3 ml-1"></i></span>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="https://allindonesia.imigrasi.go.id/arrival-card-submission/personal-information" target="_blank" class="block bg-red-50 border border-red-200 p-4 rounded-2xl shadow-sm active:bg-red-100 transition-colors">
+                    <div class="flex items-start">
+                        <div class="bg-red-600 p-2 rounded-xl mr-3 shadow-sm flex-shrink-0"><i data-lucide="home" class="w-5 h-5 text-white"></i></div>
+                        <div>
+                            <h4 class="font-bold text-red-900 text-sm mb-1">Imigrasi Indonesia</h4>
+                            <p class="text-[11px] text-red-700 font-medium leading-tight mb-2">Wajib isi formulir ini sebelum tiba di Indonesia.</p>
+                            <span class="text-[10px] font-bold text-red-600 uppercase flex items-center">Isi Sekarang <i data-lucide="chevron-right" class="w-3 h-3 ml-1"></i></span>
+                        </div>
+                    </div>
+                </a>
             </div>`;
         }
 
@@ -940,7 +1018,11 @@
             document.getElementById('dashboard-content').innerHTML = `
                 <div class="px-4 mt-6">
                     <h2 class="text-xl font-extrabold text-gray-900 mb-4 flex items-center"><i data-lucide="info" class="w-6 h-6 mr-2 text-blue-600"></i> Pusat Informasi</h2>
+                    
+                    ${renderImmigrationReminders()}
+                    ${renderFlightInfo()}
                     ${renderHotelVoucher()}
+                    
                     <div class="mb-6">
                         <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Prakiraan Cuaca</p>
                         <div class="grid grid-cols-2 gap-3">
