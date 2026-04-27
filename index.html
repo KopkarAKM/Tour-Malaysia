@@ -239,7 +239,7 @@
         ];
 
         // --- FIREBASE INIT ---
-        let firebaseConfig = {
+        const firebaseConfig = {
             apiKey: "AIzaSyBA3TJB_gc87BfMR7dgQKYqYjR8nbLUgrg",
             authDomain: "trip-malaysia.firebaseapp.com",
             projectId: "trip-malaysia",
@@ -247,17 +247,9 @@
             messagingSenderId: "66731123625",
             appId: "1:66731123625:web:e954af1c31fbd32bba5ab8"
         };
-        
-        try {
-            if (typeof __firebase_config !== 'undefined') {
-                firebaseConfig = typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : __firebase_config;
-            }
-        } catch (e) {
-            console.warn("Konfigurasi Firebase lokal digunakan", e);
-        }
 
         let app, auth, db;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'trip-planner-malaysia';
+        const appId = 'trip-planner-malaysia';
         
         // --- GLOBAL STATE ---
         const state = {
@@ -281,22 +273,29 @@
         // --- INIT FIREBASE & STATE ---
         async function init() {
             try {
-                if (Object.keys(firebaseConfig).length > 0) {
-                    app = initializeApp(firebaseConfig);
-                    auth = getAuth(app);
-                    db = getFirestore(app);
-                    
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                
+                let tokenSuccess = false;
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    try {
                         await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
+                        tokenSuccess = true;
+                    } catch (tokenError) {
+                        console.warn("Token bawaan tidak cocok dengan Firebase Kamu. Mengalihkan ke mode Anonim...", tokenError.code);
                     }
-                    state.isDemoMode = false;
                 }
+                
+                if (!tokenSuccess) {
+                    await signInAnonymously(auth);
+                }
+                
+                state.isDemoMode = false;
             } catch (error) {
-                console.error("Auth Error:", error);
+                console.error("Firebase Error Detail:", error.code, error.message);
                 state.isDemoMode = true;
-                enableLoginButton("Masuk Mode Uji Coba");
+                enableLoginButton("Error Firebase: Mode Uji Coba");
             }
 
             if(auth) {
