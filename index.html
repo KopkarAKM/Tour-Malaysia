@@ -405,7 +405,8 @@
                     state.itinerary = INITIAL_ITINERARY;
                 }
                 buildFlatSchedule();
-                if(state.currentUser) updateUI();
+                // BUG FIX: Jangan panggil updateUI saat sedang finishSurvey (race condition)
+                if(state.currentUser && !state.isFinishingSurvey) updateUI();
             });
         }
 
@@ -552,17 +553,27 @@
             state.currentUser = { ...state.currentUser, realName: name, diet, needs };
             state.surveyStep = 1;
             
-            if (state.authUser && !state.isDemoMode) {
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'participants', state.currentUser.id), { realName: name, diet, needs });
-            }
+            // Pindah tampilan ke kuesioner SEGERA (tidak menunggu respon Firestore/jaringan)
             updateUI();
+
+            if (state.authUser && !state.isDemoMode) {
+                try {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'participants', state.currentUser.id), { realName: name, diet, needs }, { merge: true });
+                } catch (dbErr) {
+                    console.error("Gagal simpan data profil ke Firestore:", dbErr);
+                }
+            }
         };
 
         window.handleAnswer = (qId, tagsStr) => {
             try {
-                const tags = JSON.parse(tagsStr.replace(/&quot;/g, '"'));
+                let tags = [];
+                if (typeof tagsStr === 'string') {
+                    tags = JSON.parse(tagsStr.replace(/&quot;/g, '"'));
+                } else if (Array.isArray(tagsStr)) {
+                    tags = tagsStr;
+                }
                 state.currentAnswers[qId] = tags;
-                // BUG FIX: Increment step dulu, baru cek apakah semua pertanyaan sudah dijawab
                 state.surveyStep++;
                 if (state.surveyStep <= QUESTIONS.length) {
                     updateUI();
@@ -571,6 +582,13 @@
                 }
             } catch (e) {
                 console.error("Format jawaban tidak valid", e);
+                // Fallback: tetap lanjut ke langkah berikutnya agar tidak macet
+                state.surveyStep++;
+                if (state.surveyStep <= QUESTIONS.length) {
+                    updateUI();
+                } else {
+                    finishSurvey();
+                }
             }
         };
 
@@ -579,23 +597,22 @@
             Object.values(state.currentAnswers).forEach(t => tags.push(...t));
             const uniqueTags = [...new Set(tags)];
             
-            // BUG FIX: Set flag untuk mencegah onSnapshot menimpa state kita
+            // Set flag untuk mencegah onSnapshot menimpa state kita
             state.isFinishingSurvey = true;
             state.currentUser = { ...state.currentUser, hasCompletedSurvey: true, interests: uniqueTags };
             
-            // Update UI DULU agar user langsung masuk dashboard (tidak tunggu Firestore)
+            // Update UI DULU agar user langsung masuk dashboard
             updateUI();
 
             if (state.authUser && !state.isDemoMode) {
                 try {
-                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'participants', state.currentUser.id), {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'participants', state.currentUser.id), {
                         hasCompletedSurvey: true, interests: uniqueTags
-                    });
+                    }, { merge: true });
                 } catch(e) {
                     console.error("Gagal simpan survei ke Firestore:", e);
                 }
             }
-            // BUG FIX: Lepas flag setelah Firestore selesai
             state.isFinishingSurvey = false;
         }
 
@@ -611,7 +628,11 @@
             
             state.currentUser.checkedTasks = newTasks;
             if (!state.isDemoMode) {
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'participants', state.currentUser.id), { checkedTasks: newTasks });
+                try {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'participants', state.currentUser.id), { checkedTasks: newTasks }, { merge: true });
+                } catch (e) {
+                    console.error("Gagal update tasks:", e);
+                }
             }
             renderDashboardJadwal();
         };
@@ -941,6 +962,10 @@
         function renderSurveyQuestion() {
             const qIdx = state.surveyStep - 1;
             const q = QUESTIONS[qIdx];
+            if (!q) {
+                finishSurvey();
+                return;
+            }
             let optionsHtml = '';
             q.options.forEach(opt => {
                 const tagsStr = JSON.stringify(opt.tags).replace(/"/g, '&quot;');
